@@ -3,39 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gestore Spese Mobile Pro</title>
+    <title>Gestore Spese</title>
+    
+    <!-- --- CONFIGURAZIONE WEB APP (ICONA & FULLSCREEN) --- -->
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Spese Pro">
+    
+    <!-- Icona generata via SVG -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💰</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232563eb%22 rx=%2220%22 ry=%2220%22/><text x=%2250%22 y=%2250%22 font-size=%2260%22 text-anchor=%22middle%22 dy=%22.35em%22>💰</text></svg>">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Nascondi scrollbar per pulizia su mobile */
         ::-webkit-scrollbar { width: 0px; background: transparent; }
-        
-        /* Animazioni Vue.js */
         .fade-enter-active, .fade-leave-active { transition: opacity 0.3s; }
         .fade-enter-from, .fade-leave-to { opacity: 0; }
-        
         .slide-up-enter-active, .slide-up-leave-active { transition: transform 0.3s ease-out; }
         .slide-up-enter-from, .slide-up-leave-to { transform: translateY(100%); }
-
-        /* Animazione personalizzata Menu Laterale (Slide Left) */
-        @keyframes slideInLeft {
-            from { transform: translateX(-100%); }
-            to { transform: translateX(0); }
-        }
-        .animate-slide-in-left {
-            animation: slideInLeft 0.3s ease-out forwards;
-        }
+        @keyframes slideInLeft { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+        .animate-slide-in-left { animation: slideInLeft 0.3s ease-out forwards; }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans h-screen flex flex-col overflow-hidden">
 
 <div id="app" class="flex flex-col h-full max-w-md mx-auto w-full bg-gray-50 shadow-2xl relative">
 
-    <!-- HEADER FISSO -->
-    <header class="bg-white p-4 shadow-sm z-10 flex justify-between items-center flex-shrink-0">
+    <!-- HEADER -->
+    <header class="bg-white p-4 shadow-sm z-10 flex justify-between items-center flex-shrink-0 pt-safe-top">
         <div class="flex items-center gap-3">
-            <!-- Tasto Menu (Apre a Sinistra) -->
             <div class="w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center text-gray-600 shadow-sm cursor-pointer hover:bg-gray-50 active:scale-95 transition"
                  @click="mostraMenu = true">
                 <i class="fa-solid fa-bars text-lg"></i>
@@ -47,7 +46,6 @@
                 </div>
             </div>
         </div>
-        <!-- Riepilogo veloce Entrate/Uscite -->
         <div class="flex gap-3">
             <div class="text-right">
                 <div class="text-[10px] text-gray-400 uppercase font-bold">Entrate</div>
@@ -60,15 +58,13 @@
         </div>
     </header>
 
-    <!-- LISTA TRANSAZIONI (SCROLLABLE) -->
+    <!-- LISTA TRANSAZIONI -->
     <main class="flex-1 overflow-y-auto p-4 pb-24 space-y-4">
-        
         <div v-if="transazioni.length === 0" class="flex flex-col items-center justify-center h-64 text-gray-400">
             <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                 <i class="fa-solid fa-wallet text-3xl opacity-20"></i>
             </div>
             <p class="font-medium">Nessuna spesa presente</p>
-            <p class="text-sm opacity-60">Usa il tasto + per iniziare</p>
         </div>
 
         <div v-for="(gruppo, mese) in transazioniPerMese" :key="mese" class="bg-white rounded-2xl shadow-sm overflow-hidden animate-fade-in border border-gray-100">
@@ -79,14 +75,11 @@
                     {{ calcolaTotaleMese(gruppo) >= 0 ? '+' : '' }}{{ formatValutaNoSymbol(calcolaTotaleMese(gruppo)) }}€
                 </span>
             </div>
-            
             <ul>
-                <li v-for="t in gruppo" :key="t.id" class="p-4 border-b last:border-0 flex justify-between items-center active:bg-gray-50 transition group">
+                <li v-for="t in gruppo" :key="t.id" @click="apriModifica(t)" class="p-4 border-b last:border-0 flex justify-between items-center active:bg-gray-50 transition group cursor-pointer relative">
                     <div class="flex items-center gap-3">
-                        <!-- Icona Categoria -->
                         <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-lg shadow-sm overflow-hidden transform transition group-active:scale-95"
                             :style="{ backgroundColor: t.tipo === 'entrata' ? '#10B981' : getColorCategoria(t.categoria) }">
-                            
                             <i v-if="isFaIcon(getIcona(t.categoria))" :class="getIcona(t.categoria)"></i>
                             <span v-else class="text-xl leading-none pt-1">{{ getIcona(t.categoria) }}</span>
                         </div>
@@ -99,7 +92,7 @@
                         <span class="font-bold font-mono text-base" :class="t.tipo === 'entrata' ? 'text-green-600' : 'text-gray-800'">
                             {{ t.tipo === 'entrata' ? '+' : '-' }}{{ formatValutaNoSymbol(t.importo) }}
                         </span>
-                        <button @click.stop="eliminaTransazione(t.id)" class="text-red-300 text-[10px] mt-1 hover:text-red-500 p-1 flex items-center gap-1">
+                        <button @click.stop="eliminaTransazione(t.id)" class="relative z-20 text-gray-300 text-[10px] mt-1 hover:text-red-500 p-2 -mr-2 flex items-center gap-1">
                             <i class="fa-solid fa-trash"></i>
                         </button>
                     </div>
@@ -108,18 +101,14 @@
         </div>
     </main>
 
-    <!-- FAB: Floating Action Button -->
-    <button @click="apriFormNuovaSpesa" 
-        class="absolute bottom-6 right-6 w-14 h-14 bg-gray-900 text-white rounded-2xl shadow-xl flex items-center justify-center text-2xl hover:bg-black hover:scale-105 active:scale-95 transition transform z-20">
+    <!-- FAB -->
+    <button @click="apriFormNuovaSpesa" class="absolute bottom-6 right-6 w-14 h-14 bg-gray-900 text-white rounded-2xl shadow-xl flex items-center justify-center text-2xl hover:bg-black hover:scale-105 active:scale-95 transition transform z-20">
         <i class="fa-solid fa-plus"></i>
     </button>
 
-    <!-- SIDEBAR MENU A SINISTRA -->
+    <!-- SIDEBAR MENU -->
     <div v-if="mostraMenu" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex justify-start transition-opacity backdrop-blur-sm" @click.self="mostraMenu = false">
-        
         <div class="w-80 bg-white h-full shadow-2xl flex flex-col animate-slide-in-left">
-            
-            <!-- Header Menu -->
             <div class="p-5 pb-0 flex justify-between items-center">
                 <h2 class="font-bold text-xl text-gray-800">Menu</h2>
                 <button @click="mostraMenu = false" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-200">
@@ -127,41 +116,42 @@
                 </button>
             </div>
 
-            <!-- TABS SWITCHER -->
             <div class="px-5 mt-6 mb-2">
                 <div class="flex bg-gray-100 p-1 rounded-xl">
-                    <button @click="tabMenu = 'analisi'" 
-                        class="flex-1 py-2 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2"
-                        :class="tabMenu === 'analisi' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'">
+                    <button @click="tabMenu = 'analisi'" class="flex-1 py-2 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2" :class="tabMenu === 'analisi' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'">
                         <i class="fa-solid fa-chart-pie"></i> Analisi
                     </button>
-                    <button @click="tabMenu = 'categorie'" 
-                        class="flex-1 py-2 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2"
-                        :class="tabMenu === 'categorie' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'">
+                    <button @click="tabMenu = 'categorie'" class="flex-1 py-2 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2" :class="tabMenu === 'categorie' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'">
                         <i class="fa-solid fa-list"></i> Categorie
                     </button>
                 </div>
             </div>
 
-            <!-- CONTENUTO SIDEBAR (SCROLLABLE) -->
             <div class="flex-1 overflow-y-auto p-5 pt-2">
                 
-                <!-- TAB 1: GRAFICI E ANALISI -->
+                <!-- TAB ANALISI -->
                 <div v-if="tabMenu === 'analisi'" class="space-y-6 animate-fade-in">
                     
+                    <!-- Switch Grafico Entrate/Uscite -->
+                    <div class="flex justify-center mb-2">
+                        <div class="bg-gray-100 p-1 rounded-lg flex text-xs font-bold">
+                            <button @click="vistaGrafico = 'uscita'" class="px-4 py-2 rounded-md transition" :class="vistaGrafico === 'uscita' ? 'bg-white text-red-500 shadow-sm' : 'text-gray-400 hover:text-gray-600'">USCITE</button>
+                            <button @click="vistaGrafico = 'entrata'" class="px-4 py-2 rounded-md transition" :class="vistaGrafico === 'entrata' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'">ENTRATE</button>
+                        </div>
+                    </div>
+
                     <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm text-center">
-                         <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-6">Dove spendi i tuoi soldi</h3>
+                         <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-6">
+                            {{ vistaGrafico === 'uscita' ? 'Dove spendi i tuoi soldi' : 'Provenienza Entrate' }}
+                         </h3>
                          
-                         <div v-if="totaleUscite > 0">
-                            <!-- Donut Chart -->
+                         <div v-if="totaleVisualizzato > 0">
                             <div class="relative w-48 h-48 mx-auto rounded-full mb-6" :style="stileGrafico">
                                 <div class="absolute inset-0 m-auto w-28 h-28 bg-white rounded-full flex flex-col items-center justify-center shadow-inner">
-                                    <span class="text-[10px] text-gray-400 uppercase font-bold">Totale Uscite</span>
-                                    <span class="font-bold text-gray-800 text-lg">{{ formatValutaNoSymbol(totaleUscite) }}€</span>
+                                    <span class="text-[10px] text-gray-400 uppercase font-bold">{{ vistaGrafico === 'uscita' ? 'Uscite' : 'Entrate' }}</span>
+                                    <span class="font-bold text-gray-800 text-lg">{{ formatValutaNoSymbol(totaleVisualizzato) }}€</span>
                                 </div>
                             </div>
-
-                            <!-- Lista Percentuali -->
                             <div class="space-y-3">
                                 <div v-for="stat in statisticheCategorie" :key="stat.cat" class="flex justify-between items-center text-sm group">
                                     <div class="flex items-center gap-3">
@@ -177,36 +167,28 @@
                          </div>
                          <div v-else class="py-10 text-gray-400 text-sm">
                              <i class="fa-solid fa-chart-simple text-3xl mb-2 opacity-30 block"></i>
-                             Ancora nessuna uscita registrata.
+                             Nessun dato presente.
                          </div>
                     </div>
                 </div>
 
-                <!-- TAB 2: GESTIONE CATEGORIE -->
+                <!-- TAB CATEGORIE -->
                 <div v-if="tabMenu === 'categorie'" class="space-y-6 animate-fade-in">
-                    
-                    <!-- Form Aggiunta -->
                     <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
                         <label class="block text-xs font-bold text-gray-400 mb-3 uppercase tracking-wider">Crea Nuova Categoria</label>
-                        
                         <div class="flex gap-2 mb-3">
                             <div class="w-1/3 relative">
-                                <input v-model="nuovaCatIcona" placeholder="🎨" 
-                                    class="w-full h-11 text-center text-xl border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-800 outline-none bg-white shadow-sm"
-                                    maxlength="2">
+                                <input v-model="nuovaCatIcona" placeholder="🎨" class="w-full h-11 text-center text-xl border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-800 outline-none bg-white shadow-sm" maxlength="2">
                                 <span class="text-[9px] text-gray-400 text-center block mt-1 absolute -bottom-4 w-full">Emoji</span>
                             </div>
                             <div class="w-2/3">
-                                <input v-model="nuovaCatNome" placeholder="Nome (es. Netflix)" 
-                                    class="w-full h-11 px-3 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-800 outline-none bg-white shadow-sm">
+                                <input v-model="nuovaCatNome" placeholder="Nome (es. Netflix)" class="w-full h-11 px-3 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-800 outline-none bg-white shadow-sm">
                             </div>
                         </div>
                         <button @click="creaCategoria" class="w-full py-2.5 bg-gray-800 text-white text-xs font-bold rounded-lg hover:bg-black transition shadow-sm flex items-center justify-center gap-2">
                             <i class="fa-solid fa-plus"></i> Aggiungi
                         </button>
                     </div>
-
-                    <!-- Lista Esistenti -->
                     <div>
                         <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Categorie Attive</h3>
                         <div class="space-y-2">
@@ -224,89 +206,114 @@
                             </div>
                         </div>
                     </div>
-
                 </div>
-
             </div>
-            
-            <!-- Footer Menu -->
-            <div class="p-4 border-t bg-gray-50 text-center text-xs text-gray-400">
-                Gestore Spese v2.0
-            </div>
+            <div class="p-4 border-t bg-gray-50 text-center text-xs text-gray-400">Gestore Spese v2.0</div>
         </div>
     </div>
 
-    <!-- MODALE: INSERIMENTO TRANSAZIONE -->
+    <!-- MODALE TRANSAZIONE -->
     <transition name="slide-up">
         <div v-if="mostraForm" class="fixed inset-0 z-40 flex items-end sm:items-center justify-center pointer-events-none">
-            <div class="absolute inset-0 bg-gray-900 bg-opacity-60 pointer-events-auto backdrop-blur-sm" @click="mostraForm = false"></div>
-            
-            <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-6 pb-10 shadow-2xl transform transition-transform pointer-events-auto">
-                <div class="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-8"></div>
-                
-                <form @submit.prevent="aggiungiTransazione">
+            <div class="absolute inset-0 bg-gray-900 bg-opacity-60 pointer-events-auto backdrop-blur-sm" @click="chiudiForm"></div>
+            <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-6 pb-10 shadow-2xl transform transition-transform pointer-events-auto max-h-[90vh] overflow-y-auto">
+                <div class="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-6"></div>
+                <h3 class="text-center text-sm font-bold text-gray-400 uppercase tracking-widest mb-6">
+                    {{ idModifica ? 'Modifica' : 'Nuova' }} 
+                    <span :class="nuova.tipo === 'entrata' ? 'text-green-600' : 'text-red-500'">
+                        {{ nuova.tipo === 'entrata' ? 'Entrata' : 'Spesa' }}
+                    </span>
+                </h3>
+
+                <form @submit.prevent="salvaTransazione">
                     <div class="flex bg-gray-100 p-1 rounded-xl mb-8">
-                        <button type="button" @click="nuova.tipo = 'uscita'" 
-                            class="flex-1 py-3 rounded-lg font-bold text-sm transition"
-                            :class="nuova.tipo === 'uscita' ? 'bg-white text-red-500 shadow-sm' : 'text-gray-400'">
-                            USCITA
-                        </button>
-                        <button type="button" @click="nuova.tipo = 'entrata'" 
-                            class="flex-1 py-3 rounded-lg font-bold text-sm transition"
-                            :class="nuova.tipo === 'entrata' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-400'">
-                            ENTRATA
-                        </button>
+                        <button type="button" @click="nuova.tipo = 'uscita'" class="flex-1 py-3 rounded-lg font-bold text-sm transition" :class="nuova.tipo === 'uscita' ? 'bg-white text-red-500 shadow-sm' : 'text-gray-400'">USCITA</button>
+                        <button type="button" @click="nuova.tipo = 'entrata'" class="flex-1 py-3 rounded-lg font-bold text-sm transition" :class="nuova.tipo === 'entrata' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-400'">ENTRATA</button>
                     </div>
 
                     <div class="mb-8 text-center">
                         <label class="text-xs font-bold text-gray-400 mb-2 block uppercase tracking-wider">Importo</label>
                         <div class="relative inline-block">
-                            <input type="number" step="0.01" inputmode="decimal" required v-model.number="nuova.importo" 
-                                placeholder="0.00" autoFocus
-                                class="w-full bg-transparent text-6xl font-extrabold text-center text-gray-800 focus:outline-none placeholder-gray-200 p-2">
-                                <span class="absolute -right-6 top-4 text-2xl text-gray-400 font-bold">€</span>
+                            <input type="number" step="0.01" inputmode="decimal" required v-model.number="nuova.importo" placeholder="0.00" autoFocus class="w-full bg-transparent text-6xl font-extrabold text-center text-gray-800 focus:outline-none placeholder-gray-200 p-2">
+                            <span class="absolute -right-6 top-4 text-2xl text-gray-400 font-bold">€</span>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4 mb-6">
-                        <div>
-                            <label class="text-[10px] font-bold text-gray-400 mb-1 block uppercase">Descrizione</label>
-                            <input type="text" required v-model="nuova.descrizione" placeholder="Es. Pizza"
-                                class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-gray-800 outline-none">
+                    <!-- CAMPI VISIBILI SOLO SE È USCITA OPPURE SE STIAMO MODIFICANDO (Per poter categorizzare entrate) -->
+                    <div v-if="nuova.tipo === 'uscita' || idModifica" class="animate-fade-in">
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-400 mb-1 block uppercase">Descrizione</label>
+                                <input type="text" v-model="nuova.descrizione" placeholder="Es. Stipendio" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-gray-800 outline-none">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-400 mb-1 block uppercase">Data</label>
+                                <input type="date" v-model="nuova.data" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-gray-800 outline-none">
+                            </div>
                         </div>
-                        <div>
-                            <label class="text-[10px] font-bold text-gray-400 mb-1 block uppercase">Data</label>
-                            <input type="date" required v-model="nuova.data" 
-                                class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-gray-800 outline-none">
-                        </div>
-                    </div>
 
-                    <div class="mb-8">
-                        <label class="text-[10px] font-bold text-gray-400 mb-3 block uppercase">Categoria</label>
-                        <div class="flex gap-3 overflow-x-auto pb-4 scrollbar-hide -mx-2 px-2">
-                            <div v-for="cat in categorie" :key="cat.nome" 
-                                @click="nuova.categoria = cat.nome"
-                                class="flex flex-col items-center gap-2 cursor-pointer min-w-[70px]">
-                                <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-xl transition border-2"
-                                     :class="nuova.categoria === cat.nome ? 'bg-gray-800 text-white border-gray-800 shadow-lg scale-110' : 'bg-white text-gray-400 border-gray-100 hover:border-gray-200'">
-                                    
-                                    <i v-if="isFaIcon(cat.icona)" :class="cat.icona"></i>
-                                    <span v-else class="text-2xl pt-1 leading-none">{{ cat.icona }}</span>
-                                
+                        <div class="mb-8">
+                            <label class="text-[10px] font-bold text-gray-400 mb-3 block uppercase flex justify-between items-center">
+                                Categoria
+                                <span v-if="mostraFormCategoriaVeloce" class="text-gray-800 text-xs normal-case bg-gray-100 px-2 py-0.5 rounded">Nuova Categoria</span>
+                            </label>
+                            
+                            <!-- Crea Categoria Veloce -->
+                            <div v-if="mostraFormCategoriaVeloce" class="mb-4 bg-gray-50 p-3 rounded-xl border border-blue-100 animate-fade-in">
+                                <div class="flex gap-2">
+                                    <div class="w-1/4 relative">
+                                        <input v-model="nuovaCatIconaVeloce" placeholder="🎨" class="w-full h-10 text-center text-lg border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white" maxlength="2">
+                                    </div>
+                                    <div class="w-3/4">
+                                        <input v-model="nuovaCatNomeVeloce" placeholder="Nome Categoria..." class="w-full h-10 px-3 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                                    </div>
                                 </div>
-                                <span class="text-[10px] font-bold truncate w-full text-center"
-                                      :class="nuova.categoria === cat.nome ? 'text-gray-800' : 'text-gray-300'">
-                                    {{ cat.nome }}
-                                </span>
+                                <div class="flex gap-2 mt-2">
+                                    <button type="button" @click="mostraFormCategoriaVeloce = false" class="flex-1 py-1.5 bg-gray-200 text-gray-600 text-xs font-bold rounded-lg">Annulla</button>
+                                    <button type="button" @click="creaCategoriaVeloce" class="flex-1 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700">Crea & Usa</button>
+                                </div>
+                            </div>
+
+                            <!-- Lista Categorie -->
+                            <div class="flex gap-3 overflow-x-auto pb-4 scrollbar-hide -mx-2 px-2">
+                                <div v-for="cat in categorie" :key="cat.nome" @click="nuova.categoria = cat.nome" class="flex flex-col items-center gap-2 cursor-pointer min-w-[70px]">
+                                    <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-xl transition border-2" :class="nuova.categoria === cat.nome ? 'bg-gray-800 text-white border-gray-800 shadow-lg scale-110' : 'bg-white text-gray-400 border-gray-100 hover:border-gray-200'">
+                                        <i v-if="isFaIcon(cat.icona)" :class="cat.icona"></i>
+                                        <span v-else class="text-2xl pt-1 leading-none">{{ cat.icona }}</span>
+                                    </div>
+                                    <span class="text-[10px] font-bold truncate w-full text-center" :class="nuova.categoria === cat.nome ? 'text-gray-800' : 'text-gray-300'">{{ cat.nome }}</span>
+                                </div>
+                                <div @click="mostraFormCategoriaVeloce = !mostraFormCategoriaVeloce" class="flex flex-col items-center gap-2 cursor-pointer min-w-[70px]">
+                                    <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-xl transition border-2 bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100">
+                                        <i class="fa-solid fa-plus"></i>
+                                    </div>
+                                    <span class="text-[10px] font-bold truncate w-full text-center text-blue-600">Crea</span>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <button type="submit" 
-                        class="w-full py-4 bg-gray-900 text-white text-lg font-bold rounded-2xl shadow-xl hover:bg-black active:scale-95 transition flex items-center justify-center gap-2">
-                        <span>Conferma Spesa</span> <i class="fa-solid fa-check"></i>
+                    <button type="submit" class="w-full py-4 bg-gray-900 text-white text-lg font-bold rounded-2xl shadow-xl hover:bg-black active:scale-95 transition flex items-center justify-center gap-2">
+                        <span>{{ idModifica ? 'Salva Modifiche' : 'Conferma' }}</span> 
+                        <i class="fa-solid" :class="idModifica ? 'fa-floppy-disk' : 'fa-check'"></i>
                     </button>
                 </form>
+            </div>
+        </div>
+    </transition>
+
+    <!-- MODALE CONFERMA -->
+    <transition name="fade">
+        <div v-if="mostraModalConferma" class="fixed inset-0 z-50 flex items-center justify-center">
+            <div class="absolute inset-0 bg-black bg-opacity-70 backdrop-blur-sm" @click="mostraModalConferma = false"></div>
+            <div class="bg-white rounded-2xl p-6 w-80 shadow-2xl transform transition-all scale-100 relative z-10 text-center">
+                <div class="w-12 h-12 rounded-full bg-red-100 text-red-500 flex items-center justify-center mx-auto mb-4 text-xl"><i class="fa-solid fa-trash"></i></div>
+                <h3 class="font-bold text-lg text-gray-800 mb-2">Eliminare la spesa?</h3>
+                <p class="text-sm text-gray-500 mb-6">Questa azione non può essere annullata.</p>
+                <div class="flex gap-3">
+                    <button @click="mostraModalConferma = false" class="flex-1 py-2.5 bg-gray-200 text-gray-700 font-bold rounded-xl text-sm">Annulla</button>
+                    <button @click="procediEliminazione" class="flex-1 py-2.5 bg-red-500 text-white font-bold rounded-xl text-sm hover:bg-red-600">Elimina</button>
+                </div>
             </div>
         </div>
     </transition>
@@ -315,31 +322,25 @@
 
 <script>
     const { createApp } = Vue;
-
     createApp({
         data() {
             return {
                 mostraMenu: false,
-                tabMenu: 'analisi', // 'analisi' | 'categorie'
+                tabMenu: 'analisi',
+                vistaGrafico: 'uscita', // 'uscita' | 'entrata'
                 mostraForm: false,
-                nuovaCatNome: '',
-                nuovaCatIcona: '',
+                idModifica: null,
+                mostraModalConferma: false,
+                idDaEliminare: null,
+                mostraFormCategoriaVeloce: false,
+                nuovaCatNomeVeloce: '', nuovaCatIconaVeloce: '',
+                nuovaCatNome: '', nuovaCatIcona: '',
                 categorie: [
-                    { nome: 'Casa', icona: '🏠' },
-                    { nome: 'Cibo', icona: '🍔' },
-                    { nome: 'Auto', icona: '🚗' },
-                    { nome: 'Shopping', icona: '🛍️' },
-                    { nome: 'Svago', icona: '🎮' },
-                    { nome: 'Salute', icona: '💊' },
-                    { nome: 'Stipendio', icona: '💰' } 
+                    { nome: 'Casa', icona: '🏠' }, { nome: 'Cibo', icona: '🍔' }, { nome: 'Auto', icona: '🚗' },
+                    { nome: 'Shopping', icona: '🛍️' }, { nome: 'Svago', icona: '🎮' }, { nome: 'Salute', icona: '💊' },
+                    { nome: 'Stipendio', icona: '💰' }, { nome: 'Regalo', icona: '🎁' }
                 ],
-                nuova: {
-                    tipo: 'uscita',
-                    importo: '',
-                    descrizione: '',
-                    categoria: 'Cibo',
-                    data: new Date().toISOString().split('T')[0]
-                },
+                nuova: { tipo: 'uscita', importo: '', descrizione: '', categoria: 'Cibo', data: new Date().toISOString().split('T')[0] },
                 transazioni: [],
                 paletteColori: ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#6366F1', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316']
             }
@@ -348,7 +349,10 @@
             saldoTotale() { return this.transazioni.reduce((acc, t) => t.tipo === 'entrata' ? acc + t.importo : acc - t.importo, 0); },
             totaleEntrate() { return this.transazioni.filter(t => t.tipo === 'entrata').reduce((acc, t) => acc + t.importo, 0); },
             totaleUscite() { return this.transazioni.filter(t => t.tipo === 'uscita').reduce((acc, t) => acc + t.importo, 0); },
-            
+            totaleVisualizzato() {
+                // Calcola il totale per il grafico (entrate o uscite)
+                return this.transazioni.filter(t => t.tipo === this.vistaGrafico).reduce((acc, t) => acc + t.importo, 0);
+            },
             transazioniPerMese() {
                 const gruppi = {};
                 const ordinate = [...this.transazioni].sort((a, b) => new Date(b.data) - new Date(a.data));
@@ -362,27 +366,23 @@
                 return gruppi;
             },
             statisticheCategorie() {
-                const uscite = this.transazioni.filter(t => t.tipo === 'uscita');
-                if (uscite.length === 0) return [];
-                const tot = uscite.reduce((acc, t) => acc + t.importo, 0);
+                // Filtra in base a vistaGrafico (uscita o entrata)
+                const filtrate = this.transazioni.filter(t => t.tipo === this.vistaGrafico);
+                if (filtrate.length === 0) return [];
+                const tot = filtrate.reduce((acc, t) => acc + t.importo, 0);
                 const stats = {};
-                
-                uscite.forEach(t => {
+                filtrate.forEach(t => {
                     if(!stats[t.categoria]) {
                         stats[t.categoria] = { cat: t.categoria, val: 0, colore: this.getColorCategoria(t.categoria) };
                     }
                     stats[t.categoria].val += t.importo;
                 });
-
-                return Object.values(stats)
-                    .sort((a, b) => b.val - a.val)
-                    .map(s => ({ ...s, perc: ((s.val / tot) * 100).toFixed(1) }));
+                return Object.values(stats).sort((a, b) => b.val - a.val).map(s => ({ ...s, perc: ((s.val / tot) * 100).toFixed(1) }));
             },
             stileGrafico() {
                 const stats = this.statisticheCategorie;
                 if (!stats.length) return { background: '#eee' };
-                let gradient = '';
-                let current = 0;
+                let gradient = ''; let current = 0;
                 stats.forEach((s, i) => {
                     const start = current;
                     const end = current + parseFloat(s.perc);
@@ -394,82 +394,71 @@
         },
         methods: {
             apriFormNuovaSpesa() {
-                this.mostraForm = true;
-                this.nuova.importo = '';
-                this.nuova.descrizione = '';
+                this.idModifica = null; this.mostraForm = true; this.mostraFormCategoriaVeloce = false;
+                this.nuova = { tipo: 'uscita', importo: '', descrizione: '', categoria: 'Cibo', data: new Date().toISOString().split('T')[0] };
             },
-            aggiungiTransazione() {
-                if(this.nuova.importo <= 0 || !this.nuova.descrizione) return;
-                
-                this.transazioni.unshift({
-                    id: Date.now(),
-                    ...this.nuova,
-                    importo: parseFloat(this.nuova.importo)
-                });
-                
-                this.salvaDati();
-                this.mostraForm = false;
+            apriModifica(transazione) {
+                this.idModifica = transazione.id; this.mostraForm = true; this.mostraFormCategoriaVeloce = false;
+                this.nuova = JSON.parse(JSON.stringify(transazione));
             },
-            eliminaTransazione(id) {
-                if(confirm('Eliminare?')) {
-                    this.transazioni = this.transazioni.filter(t => t.id !== id);
-                    this.salvaDati();
+            chiudiForm() { this.mostraForm = false; this.idModifica = null; this.mostraFormCategoriaVeloce = false; },
+            salvaTransazione() {
+                // Se è NUOVA Entrata (non modifica), resetta descr/cat
+                if (this.nuova.tipo === 'entrata' && !this.idModifica) {
+                    if(this.nuova.importo <= 0) return;
+                    this.nuova.descrizione = 'Entrata';
+                    this.nuova.categoria = 'Entrata';
+                } else {
+                    if(this.nuova.importo <= 0 || !this.nuova.descrizione) return;
                 }
+                const dati = { ...this.nuova, importo: parseFloat(this.nuova.importo) };
+                if (this.idModifica) {
+                    const index = this.transazioni.findIndex(t => t.id === this.idModifica);
+                    if (index !== -1) this.transazioni[index] = { ...dati, id: this.idModifica };
+                } else {
+                    this.transazioni.unshift({ id: Date.now(), ...dati });
+                }
+                this.salvaDati(); this.chiudiForm();
+            },
+            eliminaTransazione(id) { this.idDaEliminare = id; this.mostraModalConferma = true; },
+            procediEliminazione() {
+                if (this.idDaEliminare) { this.transazioni = this.transazioni.filter(t => t.id !== this.idDaEliminare); this.salvaDati(); }
+                this.mostraModalConferma = false; this.idDaEliminare = null;
             },
             creaCategoria() {
                 if(this.nuovaCatNome && !this.categorie.find(c => c.nome === this.nuovaCatNome)) {
-                    const iconaFinale = this.nuovaCatIcona.trim() || '🏷️';
-                    this.categorie.push({ nome: this.nuovaCatNome, icona: iconaFinale });
-                    
-                    this.nuovaCatNome = '';
-                    this.nuovaCatIcona = '';
-                    this.salvaDati();
+                    this.categorie.push({ nome: this.nuovaCatNome, icona: this.nuovaCatIcona.trim() || '🏷️' });
+                    this.nuovaCatNome = ''; this.nuovaCatIcona = ''; this.salvaDati();
                 }
             },
-            eliminaCategoria(index) {
-                if(confirm('Eliminare categoria?')) {
-                    this.categorie.splice(index, 1);
-                    this.salvaDati();
+            creaCategoriaVeloce() {
+                if(this.nuovaCatNomeVeloce && !this.categorie.find(c => c.nome === this.nuovaCatNomeVeloce)) {
+                    this.categorie.push({ nome: this.nuovaCatNomeVeloce, icona: this.nuovaCatIconaVeloce.trim() || '🏷️' });
+                    this.nuova.categoria = this.nuovaCatNomeVeloce; this.nuovaCatNomeVeloce = ''; this.nuovaCatIconaVeloce = ''; this.mostraFormCategoriaVeloce = false; this.salvaDati();
                 }
             },
+            eliminaCategoria(index) { if(confirm('Eliminare categoria?')) { this.categorie.splice(index, 1); this.salvaDati(); } },
             getIcona(nomeCategoria) {
+                if (nomeCategoria === 'Entrata') return '💰';
                 const cat = this.categorie.find(c => c.nome === nomeCategoria);
                 return cat ? cat.icona : '🏷️';
             },
-            isFaIcon(iconString) {
-                return iconString && iconString.toString().startsWith('fa-');
-            },
-            getColorCategoria(nomeCategoria) {
-                let hash = 0;
-                for (let i = 0; i < nomeCategoria.length; i++) hash = nomeCategoria.charCodeAt(i) + ((hash << 5) - hash);
+            isFaIcon(icon) { return icon && icon.toString().startsWith('fa-'); },
+            getColorCategoria(nome) {
+                let hash = 0; for (let i = 0; i < nome.length; i++) hash = nome.charCodeAt(i) + ((hash << 5) - hash);
                 return this.paletteColori[Math.abs(hash) % this.paletteColori.length];
             },
-            calcolaTotaleMese(gruppo) {
-                return gruppo.reduce((acc, t) => t.tipo === 'entrata' ? acc + t.importo : acc - t.importo, 0);
-            },
-            formatValuta(val) {
-                return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
-            },
-            formatValutaNoSymbol(val) {
-                return new Intl.NumberFormat('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val);
-            },
-            salvaDati() {
-                localStorage.setItem('wallet_transazioni', JSON.stringify(this.transazioni));
-                localStorage.setItem('wallet_categorie_obj', JSON.stringify(this.categorie));
-            },
+            calcolaTotaleMese(gruppo) { return gruppo.reduce((acc, t) => t.tipo === 'entrata' ? acc + t.importo : acc - t.importo, 0); },
+            formatValuta(val) { return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val); },
+            formatValutaNoSymbol(val) { return new Intl.NumberFormat('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val); },
+            salvaDati() { localStorage.setItem('wallet_transazioni', JSON.stringify(this.transazioni)); localStorage.setItem('wallet_categorie_obj', JSON.stringify(this.categorie)); },
             caricaDati() {
-                const tx = localStorage.getItem('wallet_transazioni');
-                const catObj = localStorage.getItem('wallet_categorie_obj');
-                
-                if (tx) this.transazioni = JSON.parse(tx);
-                if (catObj) this.categorie = JSON.parse(catObj);
+                const tx = localStorage.getItem('wallet_transazioni'); const catObj = localStorage.getItem('wallet_categorie_obj');
+                if (tx) this.transazioni = JSON.parse(tx); if (catObj) this.categorie = JSON.parse(catObj);
             }
         },
-        mounted() {
-            this.caricaDati();
-        }
+        mounted() { this.caricaDati(); }
     }).mount('#app');
 </script>
-
 </body>
 </html>
