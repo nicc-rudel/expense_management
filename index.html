@@ -2,179 +2,315 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestore Spese con Grafici</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gestore Spese Mobile Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Animazione per l'ingresso delle liste */
-        .fade-enter-active, .fade-leave-active { transition: opacity 0.5s; }
+        /* Nascondi scrollbar per pulizia su mobile */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+        
+        /* Animazioni Vue.js */
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.3s; }
         .fade-enter-from, .fade-leave-to { opacity: 0; }
+        
+        .slide-up-enter-active, .slide-up-leave-active { transition: transform 0.3s ease-out; }
+        .slide-up-enter-from, .slide-up-leave-to { transform: translateY(100%); }
+
+        /* Animazione personalizzata Menu Laterale (Slide Left) */
+        @keyframes slideInLeft {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(0); }
+        }
+        .animate-slide-in-left {
+            animation: slideInLeft 0.3s ease-out forwards;
+        }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans">
+<body class="bg-gray-100 text-gray-800 font-sans h-screen flex flex-col overflow-hidden">
 
-<div id="app" class="max-w-4xl mx-auto p-4">
+<div id="app" class="flex flex-col h-full max-w-md mx-auto w-full bg-gray-50 shadow-2xl relative">
 
-    <!-- Header Globale -->
-    <header class="mb-8 text-center bg-white p-6 rounded-xl shadow-md border-t-4 border-blue-500">
-        <h1 class="text-2xl font-bold mb-2 text-gray-700">💰 Gestione Spese</h1>
-        <div class="text-4xl font-extrabold" :class="saldoTotale >= 0 ? 'text-green-600' : 'text-red-500'">
-            {{ formatValuta(saldoTotale) }}
-        </div>
-        <p class="text-gray-500 text-sm mt-1">Saldo Attuale</p>
-        
-        <div class="flex justify-center gap-8 mt-4 text-sm md:text-base">
-            <div class="text-green-600 bg-green-50 px-3 py-1 rounded-full">
-                <i class="fa-solid fa-arrow-down"></i> Entrate: <span class="font-bold">{{ formatValuta(totaleEntrate) }}</span>
+    <!-- HEADER FISSO -->
+    <header class="bg-white p-4 shadow-sm z-10 flex justify-between items-center flex-shrink-0">
+        <div class="flex items-center gap-3">
+            <!-- Tasto Menu (Apre a Sinistra) -->
+            <div class="w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center text-gray-600 shadow-sm cursor-pointer hover:bg-gray-50 active:scale-95 transition"
+                 @click="mostraMenu = true">
+                <i class="fa-solid fa-bars text-lg"></i>
             </div>
-            <div class="text-red-500 bg-red-50 px-3 py-1 rounded-full">
-                <i class="fa-solid fa-arrow-up"></i> Uscite: <span class="font-bold">{{ formatValuta(totaleUscite) }}</span>
+            <div>
+                <h1 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Saldo Attuale</h1>
+                <div class="text-xl font-extrabold leading-none tracking-tight" :class="saldoTotale >= 0 ? 'text-gray-800' : 'text-red-500'">
+                    {{ formatValuta(saldoTotale) }}
+                </div>
+            </div>
+        </div>
+        <!-- Riepilogo veloce Entrate/Uscite -->
+        <div class="flex gap-3">
+            <div class="text-right">
+                <div class="text-[10px] text-gray-400 uppercase font-bold">Entrate</div>
+                <div class="text-green-600 font-bold text-xs">+{{ formatValutaNoSymbol(totaleEntrate) }}</div>
+            </div>
+            <div class="text-right">
+                <div class="text-[10px] text-gray-400 uppercase font-bold">Uscite</div>
+                <div class="text-red-500 font-bold text-xs">-{{ formatValutaNoSymbol(totaleUscite) }}</div>
             </div>
         </div>
     </header>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <!-- LISTA TRANSAZIONI (SCROLLABLE) -->
+    <main class="flex-1 overflow-y-auto p-4 pb-24 space-y-4">
         
-        <!-- COLONNA SINISTRA: Form Inserimento -->
-        <div class="md:col-span-1 bg-white p-6 rounded-xl shadow-md h-fit sticky top-4">
-            <h2 class="text-xl font-bold mb-4 border-b pb-2">Nuova Transazione</h2>
-            
-            <form @submit.prevent="aggiungiTransazione">
-                <div class="mb-3">
-                    <label class="block text-sm font-bold mb-1">Tipo</label>
-                    <div class="flex bg-gray-200 rounded p-1">
-                        <button type="button" @click="nuova.tipo = 'entrata'" 
-                            class="flex-1 py-1 rounded transition"
-                            :class="nuova.tipo === 'entrata' ? 'bg-green-500 text-white shadow' : 'text-gray-600'">
-                            Entrata
-                        </button>
-                        <button type="button" @click="nuova.tipo = 'uscita'" 
-                            class="flex-1 py-1 rounded transition"
-                            :class="nuova.tipo === 'uscita' ? 'bg-red-500 text-white shadow' : 'text-gray-600'">
-                            Uscita
-                        </button>
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <label class="block text-sm font-bold mb-1">Importo (€)</label>
-                    <input type="number" step="0.01" required v-model.number="nuova.importo" 
-                        class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400">
-                </div>
-
-                <div class="mb-3">
-                    <label class="block text-sm font-bold mb-1">Descrizione</label>
-                    <input type="text" required v-model="nuova.descrizione" placeholder="Es. Spesa, Stipendio..."
-                        class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400">
-                </div>
-
-                <div class="mb-3">
-                    <label class="block text-sm font-bold mb-1">Categoria</label>
-                    <select v-model="nuova.categoria" class="w-full p-2 border rounded bg-white">
-                        <option v-for="cat in categorieDisponibili" :key="cat" :value="cat">{{ cat }}</option>
-                    </select>
-                </div>
-
-                <div class="mb-3">
-                    <label class="block text-sm font-bold mb-1">Data</label>
-                    <input type="date" required v-model="nuova.data" 
-                        class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400">
-                </div>
-
-                <button type="submit" 
-                    class="w-full py-2 bg-blue-600 text-white font-bold rounded hover:bg-blue-700 transition">
-                    Aggiungi
-                </button>
-            </form>
-
-            <div class="mt-8 pt-4 border-t">
-                <h3 class="text-sm font-bold mb-2 text-gray-500">Aggiungi Categoria</h3>
-                <div class="flex gap-2">
-                    <input v-model="nuovaCategoria" placeholder="Nuova cat..." class="w-full p-1 border rounded text-sm">
-                    <button @click="creaCategoria" class="bg-gray-700 text-white px-3 rounded text-sm">+</button>
-                </div>
+        <div v-if="transazioni.length === 0" class="flex flex-col items-center justify-center h-64 text-gray-400">
+            <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <i class="fa-solid fa-wallet text-3xl opacity-20"></i>
             </div>
+            <p class="font-medium">Nessuna spesa presente</p>
+            <p class="text-sm opacity-60">Usa il tasto + per iniziare</p>
         </div>
 
-        <!-- COLONNA DESTRA: Lista Movimenti con Grafici -->
-        <div class="md:col-span-2 space-y-8">
+        <div v-for="(gruppo, mese) in transazioniPerMese" :key="mese" class="bg-white rounded-2xl shadow-sm overflow-hidden animate-fade-in border border-gray-100">
+            <div class="bg-gray-50 px-4 py-2 border-b flex justify-between items-center sticky top-0 z-0">
+                <h3 class="font-bold text-gray-500 uppercase text-xs tracking-wider">{{ mese }}</h3>
+                <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-white border border-gray-200"
+                    :class="calcolaTotaleMese(gruppo) >= 0 ? 'text-green-600' : 'text-red-500'">
+                    {{ calcolaTotaleMese(gruppo) >= 0 ? '+' : '' }}{{ formatValutaNoSymbol(calcolaTotaleMese(gruppo)) }}€
+                </span>
+            </div>
             
-            <div v-if="transazioni.length === 0" class="text-center py-10 bg-white rounded-xl shadow-md">
-                <p class="text-gray-400 text-lg">Nessuna transazione registrata.</p>
-                <p class="text-sm text-gray-400">Aggiungi la tua prima spesa a sinistra.</p>
+            <ul>
+                <li v-for="t in gruppo" :key="t.id" class="p-4 border-b last:border-0 flex justify-between items-center active:bg-gray-50 transition group">
+                    <div class="flex items-center gap-3">
+                        <!-- Icona Categoria -->
+                        <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-lg shadow-sm overflow-hidden transform transition group-active:scale-95"
+                            :style="{ backgroundColor: t.tipo === 'entrata' ? '#10B981' : getColorCategoria(t.categoria) }">
+                            
+                            <i v-if="isFaIcon(getIcona(t.categoria))" :class="getIcona(t.categoria)"></i>
+                            <span v-else class="text-xl leading-none pt-1">{{ getIcona(t.categoria) }}</span>
+                        </div>
+                        <div>
+                            <p class="font-bold text-gray-800 leading-tight text-sm">{{ t.descrizione }}</p>
+                            <p class="text-[11px] text-gray-400 mt-0.5 font-medium">{{ t.data_short }} • {{ t.categoria }}</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col items-end">
+                        <span class="font-bold font-mono text-base" :class="t.tipo === 'entrata' ? 'text-green-600' : 'text-gray-800'">
+                            {{ t.tipo === 'entrata' ? '+' : '-' }}{{ formatValutaNoSymbol(t.importo) }}
+                        </span>
+                        <button @click.stop="eliminaTransazione(t.id)" class="text-red-300 text-[10px] mt-1 hover:text-red-500 p-1 flex items-center gap-1">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </main>
+
+    <!-- FAB: Floating Action Button -->
+    <button @click="apriFormNuovaSpesa" 
+        class="absolute bottom-6 right-6 w-14 h-14 bg-gray-900 text-white rounded-2xl shadow-xl flex items-center justify-center text-2xl hover:bg-black hover:scale-105 active:scale-95 transition transform z-20">
+        <i class="fa-solid fa-plus"></i>
+    </button>
+
+    <!-- SIDEBAR MENU A SINISTRA -->
+    <div v-if="mostraMenu" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex justify-start transition-opacity backdrop-blur-sm" @click.self="mostraMenu = false">
+        
+        <div class="w-80 bg-white h-full shadow-2xl flex flex-col animate-slide-in-left">
+            
+            <!-- Header Menu -->
+            <div class="p-5 pb-0 flex justify-between items-center">
+                <h2 class="font-bold text-xl text-gray-800">Menu</h2>
+                <button @click="mostraMenu = false" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-200">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
             </div>
 
-            <!-- Loop Mesi -->
-            <div v-for="(gruppo, mese) in transazioniPerMese" :key="mese" class="bg-white rounded-xl shadow-md overflow-hidden">
+            <!-- TABS SWITCHER -->
+            <div class="px-5 mt-6 mb-2">
+                <div class="flex bg-gray-100 p-1 rounded-xl">
+                    <button @click="tabMenu = 'analisi'" 
+                        class="flex-1 py-2 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2"
+                        :class="tabMenu === 'analisi' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'">
+                        <i class="fa-solid fa-chart-pie"></i> Analisi
+                    </button>
+                    <button @click="tabMenu = 'categorie'" 
+                        class="flex-1 py-2 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2"
+                        :class="tabMenu === 'categorie' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'">
+                        <i class="fa-solid fa-list"></i> Categorie
+                    </button>
+                </div>
+            </div>
+
+            <!-- CONTENUTO SIDEBAR (SCROLLABLE) -->
+            <div class="flex-1 overflow-y-auto p-5 pt-2">
                 
-                <!-- Header Mese -->
-                <div class="bg-gray-50 p-4 border-b flex justify-between items-center">
-                    <h3 class="font-bold text-gray-700 capitalize text-lg">{{ mese }}</h3>
-                    <span class="text-sm px-3 py-1 rounded font-mono font-bold"
-                        :class="calcolaTotaleMese(gruppo) >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
-                        {{ formatValuta(calcolaTotaleMese(gruppo)) }}
-                    </span>
+                <!-- TAB 1: GRAFICI E ANALISI -->
+                <div v-if="tabMenu === 'analisi'" class="space-y-6 animate-fade-in">
+                    
+                    <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm text-center">
+                         <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-6">Dove spendi i tuoi soldi</h3>
+                         
+                         <div v-if="totaleUscite > 0">
+                            <!-- Donut Chart -->
+                            <div class="relative w-48 h-48 mx-auto rounded-full mb-6" :style="stileGrafico">
+                                <div class="absolute inset-0 m-auto w-28 h-28 bg-white rounded-full flex flex-col items-center justify-center shadow-inner">
+                                    <span class="text-[10px] text-gray-400 uppercase font-bold">Totale Uscite</span>
+                                    <span class="font-bold text-gray-800 text-lg">{{ formatValutaNoSymbol(totaleUscite) }}€</span>
+                                </div>
+                            </div>
+
+                            <!-- Lista Percentuali -->
+                            <div class="space-y-3">
+                                <div v-for="stat in statisticheCategorie" :key="stat.cat" class="flex justify-between items-center text-sm group">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-2 h-8 rounded-full" :style="{ backgroundColor: stat.colore }"></div>
+                                        <div class="text-left">
+                                            <div class="font-bold text-gray-700">{{ stat.cat }}</div>
+                                            <div class="text-xs text-gray-400">{{ formatValutaNoSymbol(stat.val) }}€</div>
+                                        </div>
+                                    </div>
+                                    <div class="font-mono font-bold text-gray-600 bg-gray-50 px-2 py-1 rounded">{{ stat.perc }}%</div>
+                                </div>
+                            </div>
+                         </div>
+                         <div v-else class="py-10 text-gray-400 text-sm">
+                             <i class="fa-solid fa-chart-simple text-3xl mb-2 opacity-30 block"></i>
+                             Ancora nessuna uscita registrata.
+                         </div>
+                    </div>
                 </div>
 
-                <!-- SEZIONE GRAFICO (Solo se ci sono uscite) -->
-                <div v-if="haUscite(gruppo)" class="p-5 bg-white border-b">
-                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Analisi Uscite</h4>
-                    <div class="flex flex-col sm:flex-row items-center gap-6">
+                <!-- TAB 2: GESTIONE CATEGORIE -->
+                <div v-if="tabMenu === 'categorie'" class="space-y-6 animate-fade-in">
+                    
+                    <!-- Form Aggiunta -->
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <label class="block text-xs font-bold text-gray-400 mb-3 uppercase tracking-wider">Crea Nuova Categoria</label>
                         
-                        <!-- Il Grafico a Torta (CSS Conic Gradient) -->
-                        <div class="relative w-32 h-32 rounded-full shadow-inner flex-shrink-0"
-                             :style="getStileGrafico(gruppo)">
-                            <!-- Buco centrale per effetto ciambella -->
-                            <div class="absolute inset-0 m-auto w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-sm">
-                                <span class="text-xs font-bold text-gray-400">Uscite</span>
+                        <div class="flex gap-2 mb-3">
+                            <div class="w-1/3 relative">
+                                <input v-model="nuovaCatIcona" placeholder="🎨" 
+                                    class="w-full h-11 text-center text-xl border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-800 outline-none bg-white shadow-sm"
+                                    maxlength="2">
+                                <span class="text-[9px] text-gray-400 text-center block mt-1 absolute -bottom-4 w-full">Emoji</span>
+                            </div>
+                            <div class="w-2/3">
+                                <input v-model="nuovaCatNome" placeholder="Nome (es. Netflix)" 
+                                    class="w-full h-11 px-3 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-800 outline-none bg-white shadow-sm">
                             </div>
                         </div>
+                        <button @click="creaCategoria" class="w-full py-2.5 bg-gray-800 text-white text-xs font-bold rounded-lg hover:bg-black transition shadow-sm flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-plus"></i> Aggiungi
+                        </button>
+                    </div>
 
-                        <!-- Legenda Dettagliata -->
-                        <div class="w-full">
-                            <div v-for="stat in getStatisticheCategoria(gruppo)" :key="stat.cat" class="flex items-center justify-between text-sm mb-2 last:mb-0">
-                                <div class="flex items-center gap-2">
-                                    <span class="w-3 h-3 rounded-full" :style="{ backgroundColor: stat.colore }"></span>
-                                    <span class="text-gray-600">{{ stat.cat }}</span>
-                                </div>
+                    <!-- Lista Esistenti -->
+                    <div>
+                        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Categorie Attive</h3>
+                        <div class="space-y-2">
+                            <div v-for="(cat, index) in categorie" :key="index" class="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
                                 <div class="flex items-center gap-3">
-                                    <span class="font-bold text-gray-700">{{ formatValuta(stat.importo) }}</span>
-                                    <span class="text-xs text-gray-400 w-8 text-right">{{ stat.perc }}%</span>
+                                    <div class="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-lg">
+                                        <i v-if="isFaIcon(cat.icona)" :class="cat.icona" class="text-gray-500 text-sm"></i>
+                                        <span v-else class="leading-none pt-0.5">{{ cat.icona }}</span>
+                                    </div>
+                                    <span class="font-bold text-sm text-gray-700">{{ cat.nome }}</span>
                                 </div>
+                                <button @click="eliminaCategoria(index)" class="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition" v-if="categorie.length > 1">
+                                    <i class="fa-solid fa-trash text-xs"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
-                </div>
-                
-                <!-- Lista Transazioni -->
-                <ul>
-                    <li v-for="t in gruppo" :key="t.id" class="p-4 border-b last:border-0 flex justify-between items-center hover:bg-gray-50 transition group">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm"
-                                :style="{ backgroundColor: getColorCategoria(t.categoria, t.tipo) }">
-                                <i :class="getIcona(t.categoria)"></i>
-                            </div>
-                            <div>
-                                <p class="font-bold text-gray-800">{{ t.descrizione }}</p>
-                                <p class="text-xs text-gray-500">{{ t.data }} • <span class="bg-gray-100 px-1 rounded">{{ t.categoria }}</span></p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <span class="font-bold font-mono" :class="t.tipo === 'entrata' ? 'text-green-600' : 'text-red-500'">
-                                {{ t.tipo === 'entrata' ? '+' : '-' }} {{ formatValuta(t.importo) }}
-                            </span>
-                            <button @click="eliminaTransazione(t.id)" class="text-gray-300 hover:text-red-500 transition opacity-0 group-hover:opacity-100 focus:opacity-100">
-                                <i class="fa-solid fa-trash"></i>
-                            </button>
-                        </div>
-                    </li>
-                </ul>
-            </div>
 
+                </div>
+
+            </div>
+            
+            <!-- Footer Menu -->
+            <div class="p-4 border-t bg-gray-50 text-center text-xs text-gray-400">
+                Gestore Spese v2.0
+            </div>
         </div>
     </div>
+
+    <!-- MODALE: INSERIMENTO TRANSAZIONE -->
+    <transition name="slide-up">
+        <div v-if="mostraForm" class="fixed inset-0 z-40 flex items-end sm:items-center justify-center pointer-events-none">
+            <div class="absolute inset-0 bg-gray-900 bg-opacity-60 pointer-events-auto backdrop-blur-sm" @click="mostraForm = false"></div>
+            
+            <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-6 pb-10 shadow-2xl transform transition-transform pointer-events-auto">
+                <div class="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-8"></div>
+                
+                <form @submit.prevent="aggiungiTransazione">
+                    <div class="flex bg-gray-100 p-1 rounded-xl mb-8">
+                        <button type="button" @click="nuova.tipo = 'uscita'" 
+                            class="flex-1 py-3 rounded-lg font-bold text-sm transition"
+                            :class="nuova.tipo === 'uscita' ? 'bg-white text-red-500 shadow-sm' : 'text-gray-400'">
+                            USCITA
+                        </button>
+                        <button type="button" @click="nuova.tipo = 'entrata'" 
+                            class="flex-1 py-3 rounded-lg font-bold text-sm transition"
+                            :class="nuova.tipo === 'entrata' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-400'">
+                            ENTRATA
+                        </button>
+                    </div>
+
+                    <div class="mb-8 text-center">
+                        <label class="text-xs font-bold text-gray-400 mb-2 block uppercase tracking-wider">Importo</label>
+                        <div class="relative inline-block">
+                            <input type="number" step="0.01" inputmode="decimal" required v-model.number="nuova.importo" 
+                                placeholder="0.00" autoFocus
+                                class="w-full bg-transparent text-6xl font-extrabold text-center text-gray-800 focus:outline-none placeholder-gray-200 p-2">
+                                <span class="absolute -right-6 top-4 text-2xl text-gray-400 font-bold">€</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-400 mb-1 block uppercase">Descrizione</label>
+                            <input type="text" required v-model="nuova.descrizione" placeholder="Es. Pizza"
+                                class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-gray-800 outline-none">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-400 mb-1 block uppercase">Data</label>
+                            <input type="date" required v-model="nuova.data" 
+                                class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-gray-800 outline-none">
+                        </div>
+                    </div>
+
+                    <div class="mb-8">
+                        <label class="text-[10px] font-bold text-gray-400 mb-3 block uppercase">Categoria</label>
+                        <div class="flex gap-3 overflow-x-auto pb-4 scrollbar-hide -mx-2 px-2">
+                            <div v-for="cat in categorie" :key="cat.nome" 
+                                @click="nuova.categoria = cat.nome"
+                                class="flex flex-col items-center gap-2 cursor-pointer min-w-[70px]">
+                                <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-xl transition border-2"
+                                     :class="nuova.categoria === cat.nome ? 'bg-gray-800 text-white border-gray-800 shadow-lg scale-110' : 'bg-white text-gray-400 border-gray-100 hover:border-gray-200'">
+                                    
+                                    <i v-if="isFaIcon(cat.icona)" :class="cat.icona"></i>
+                                    <span v-else class="text-2xl pt-1 leading-none">{{ cat.icona }}</span>
+                                
+                                </div>
+                                <span class="text-[10px] font-bold truncate w-full text-center"
+                                      :class="nuova.categoria === cat.nome ? 'text-gray-800' : 'text-gray-300'">
+                                    {{ cat.nome }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" 
+                        class="w-full py-4 bg-gray-900 text-white text-lg font-bold rounded-2xl shadow-xl hover:bg-black active:scale-95 transition flex items-center justify-center gap-2">
+                        <span>Conferma Spesa</span> <i class="fa-solid fa-check"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </transition>
+
 </div>
 
 <script>
@@ -183,13 +319,19 @@
     createApp({
         data() {
             return {
-                nuovaCategoria: '',
-                // Lista categorie base
-                categorie: ['Casa', 'Cibo', 'Trasporti', 'Svago', 'Salute', 'Stipendio', 'Investimenti', 'Shopping', 'Bollette'],
-                // Palette colori per le categorie (per il grafico)
-                paletteColori: [
-                    '#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#6366F1', 
-                    '#8B5CF6', '#EC4899', '#14B8A6', '#F97316', '#64748B'
+                mostraMenu: false,
+                tabMenu: 'analisi', // 'analisi' | 'categorie'
+                mostraForm: false,
+                nuovaCatNome: '',
+                nuovaCatIcona: '',
+                categorie: [
+                    { nome: 'Casa', icona: '🏠' },
+                    { nome: 'Cibo', icona: '🍔' },
+                    { nome: 'Auto', icona: '🚗' },
+                    { nome: 'Shopping', icona: '🛍️' },
+                    { nome: 'Svago', icona: '🎮' },
+                    { nome: 'Salute', icona: '💊' },
+                    { nome: 'Stipendio', icona: '💰' } 
                 ],
                 nuova: {
                     tipo: 'uscita',
@@ -198,140 +340,129 @@
                     categoria: 'Cibo',
                     data: new Date().toISOString().split('T')[0]
                 },
-                transazioni: []
+                transazioni: [],
+                paletteColori: ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#6366F1', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316']
             }
         },
         computed: {
-            saldoTotale() {
-                return this.transazioni.reduce((acc, t) => t.tipo === 'entrata' ? acc + t.importo : acc - t.importo, 0);
-            },
-            totaleEntrate() {
-                return this.transazioni.filter(t => t.tipo === 'entrata').reduce((acc, t) => acc + t.importo, 0);
-            },
-            totaleUscite() {
-                return this.transazioni.filter(t => t.tipo === 'uscita').reduce((acc, t) => acc + t.importo, 0);
-            },
-            categorieDisponibili() {
-                return this.categorie.sort();
-            },
+            saldoTotale() { return this.transazioni.reduce((acc, t) => t.tipo === 'entrata' ? acc + t.importo : acc - t.importo, 0); },
+            totaleEntrate() { return this.transazioni.filter(t => t.tipo === 'entrata').reduce((acc, t) => acc + t.importo, 0); },
+            totaleUscite() { return this.transazioni.filter(t => t.tipo === 'uscita').reduce((acc, t) => acc + t.importo, 0); },
+            
             transazioniPerMese() {
                 const gruppi = {};
                 const ordinate = [...this.transazioni].sort((a, b) => new Date(b.data) - new Date(a.data));
-                
                 ordinate.forEach(t => {
                     const data = new Date(t.data);
-                    // Formato: "ottobre 2023"
                     const chiaveMese = data.toLocaleString('it-IT', { month: 'long', year: 'numeric' });
+                    t.data_short = data.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
                     if (!gruppi[chiaveMese]) gruppi[chiaveMese] = [];
                     gruppi[chiaveMese].push(t);
                 });
                 return gruppi;
+            },
+            statisticheCategorie() {
+                const uscite = this.transazioni.filter(t => t.tipo === 'uscita');
+                if (uscite.length === 0) return [];
+                const tot = uscite.reduce((acc, t) => acc + t.importo, 0);
+                const stats = {};
+                
+                uscite.forEach(t => {
+                    if(!stats[t.categoria]) {
+                        stats[t.categoria] = { cat: t.categoria, val: 0, colore: this.getColorCategoria(t.categoria) };
+                    }
+                    stats[t.categoria].val += t.importo;
+                });
+
+                return Object.values(stats)
+                    .sort((a, b) => b.val - a.val)
+                    .map(s => ({ ...s, perc: ((s.val / tot) * 100).toFixed(1) }));
+            },
+            stileGrafico() {
+                const stats = this.statisticheCategorie;
+                if (!stats.length) return { background: '#eee' };
+                let gradient = '';
+                let current = 0;
+                stats.forEach((s, i) => {
+                    const start = current;
+                    const end = current + parseFloat(s.perc);
+                    gradient += `${s.colore} ${start}% ${end}%${i < stats.length - 1 ? ', ' : ''}`;
+                    current = end;
+                });
+                return { background: `conic-gradient(${gradient})` };
             }
         },
         methods: {
-            aggiungiTransazione() {
-                if(this.nuova.importo <= 0 || !this.nuova.descrizione) return;
-                const transazione = {
-                    id: Date.now(),
-                    ...this.nuova,
-                    importo: parseFloat(this.nuova.importo)
-                };
-                this.transazioni.unshift(transazione);
-                this.salvaDati();
+            apriFormNuovaSpesa() {
+                this.mostraForm = true;
                 this.nuova.importo = '';
                 this.nuova.descrizione = '';
             },
+            aggiungiTransazione() {
+                if(this.nuova.importo <= 0 || !this.nuova.descrizione) return;
+                
+                this.transazioni.unshift({
+                    id: Date.now(),
+                    ...this.nuova,
+                    importo: parseFloat(this.nuova.importo)
+                });
+                
+                this.salvaDati();
+                this.mostraForm = false;
+            },
             eliminaTransazione(id) {
-                if(confirm('Eliminare questa transazione?')) {
+                if(confirm('Eliminare?')) {
                     this.transazioni = this.transazioni.filter(t => t.id !== id);
                     this.salvaDati();
                 }
             },
             creaCategoria() {
-                if(this.nuovaCategoria && !this.categorie.includes(this.nuovaCategoria)) {
-                    this.categorie.push(this.nuovaCategoria);
-                    this.nuovaCategoria = '';
+                if(this.nuovaCatNome && !this.categorie.find(c => c.nome === this.nuovaCatNome)) {
+                    const iconaFinale = this.nuovaCatIcona.trim() || '🏷️';
+                    this.categorie.push({ nome: this.nuovaCatNome, icona: iconaFinale });
+                    
+                    this.nuovaCatNome = '';
+                    this.nuovaCatIcona = '';
                     this.salvaDati();
                 }
             },
-            calcolaTotaleMese(transazioniMese) {
-                return transazioniMese.reduce((acc, t) => t.tipo === 'entrata' ? acc + t.importo : acc - t.importo, 0);
+            eliminaCategoria(index) {
+                if(confirm('Eliminare categoria?')) {
+                    this.categorie.splice(index, 1);
+                    this.salvaDati();
+                }
             },
-            formatValuta(valore) {
-                return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(valore);
+            getIcona(nomeCategoria) {
+                const cat = this.categorie.find(c => c.nome === nomeCategoria);
+                return cat ? cat.icona : '🏷️';
             },
-            getIcona(categoria) {
-                const map = {
-                    'Casa': 'fa-house', 'Cibo': 'fa-utensils', 'Trasporti': 'fa-car',
-                    'Svago': 'fa-gamepad', 'Salute': 'fa-heart-pulse', 'Stipendio': 'fa-money-bill-wave',
-                    'Shopping': 'fa-bag-shopping', 'Bollette': 'fa-bolt', 'Investimenti': 'fa-chart-line'
-                };
-                return map[categoria] || 'fa-tag';
+            isFaIcon(iconString) {
+                return iconString && iconString.toString().startsWith('fa-');
             },
-            // --- LOGICA GRAFICI ---
-            haUscite(transazioni) {
-                return transazioni.some(t => t.tipo === 'uscita');
-            },
-            getColorCategoria(categoria, tipo) {
-                if (tipo === 'entrata') return '#10B981'; // Verde fisso per entrate
-                // Genera un indice basato sul nome della categoria per assegnare sempre lo stesso colore
+            getColorCategoria(nomeCategoria) {
                 let hash = 0;
-                for (let i = 0; i < categoria.length; i++) hash = categoria.charCodeAt(i) + ((hash << 5) - hash);
-                const index = Math.abs(hash) % this.paletteColori.length;
-                return this.paletteColori[index];
+                for (let i = 0; i < nomeCategoria.length; i++) hash = nomeCategoria.charCodeAt(i) + ((hash << 5) - hash);
+                return this.paletteColori[Math.abs(hash) % this.paletteColori.length];
             },
-            getStatisticheCategoria(transazioni) {
-                // Filtra solo uscite
-                const uscite = transazioni.filter(t => t.tipo === 'uscita');
-                const totaleUscite = uscite.reduce((acc, t) => acc + t.importo, 0);
-                
-                // Raggruppa per categoria
-                const stats = {};
-                uscite.forEach(t => {
-                    if(!stats[t.categoria]) {
-                        stats[t.categoria] = { 
-                            cat: t.categoria, 
-                            importo: 0, 
-                            colore: this.getColorCategoria(t.categoria, 'uscita') 
-                        };
-                    }
-                    stats[t.categoria].importo += t.importo;
-                });
-
-                // Calcola percentuali e trasforma in array
-                return Object.values(stats)
-                    .map(item => ({
-                        ...item,
-                        perc: ((item.importo / totaleUscite) * 100).toFixed(1)
-                    }))
-                    .sort((a, b) => b.importo - a.importo); // Ordina dal più costoso
+            calcolaTotaleMese(gruppo) {
+                return gruppo.reduce((acc, t) => t.tipo === 'entrata' ? acc + t.importo : acc - t.importo, 0);
             },
-            getStileGrafico(transazioni) {
-                const stats = this.getStatisticheCategoria(transazioni);
-                let gradientString = '';
-                let currentPerc = 0;
-
-                stats.forEach((stat, index) => {
-                    const percStart = currentPerc;
-                    const percEnd = currentPerc + parseFloat(stat.perc);
-                    gradientString += `${stat.colore} ${percStart}% ${percEnd}%${index < stats.length - 1 ? ', ' : ''}`;
-                    currentPerc = percEnd;
-                });
-
-                return {
-                    background: `conic-gradient(${gradientString})`
-                };
+            formatValuta(val) {
+                return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
             },
-            // --- PERSISTENZA ---
+            formatValutaNoSymbol(val) {
+                return new Intl.NumberFormat('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val);
+            },
             salvaDati() {
                 localStorage.setItem('wallet_transazioni', JSON.stringify(this.transazioni));
-                localStorage.setItem('wallet_categorie', JSON.stringify(this.categorie));
+                localStorage.setItem('wallet_categorie_obj', JSON.stringify(this.categorie));
             },
             caricaDati() {
-                const salvati = localStorage.getItem('wallet_transazioni');
-                const catSalvate = localStorage.getItem('wallet_categorie');
-                if (salvati) this.transazioni = JSON.parse(salvati);
-                if (catSalvate) this.categorie = JSON.parse(catSalvate);
+                const tx = localStorage.getItem('wallet_transazioni');
+                const catObj = localStorage.getItem('wallet_categorie_obj');
+                
+                if (tx) this.transazioni = JSON.parse(tx);
+                if (catObj) this.categorie = JSON.parse(catObj);
             }
         },
         mounted() {
