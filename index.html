@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestore Spese con Grafici</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Animazione per l'ingresso delle liste */
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.5s; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans">
+
+<div id="app" class="max-w-4xl mx-auto p-4">
+
+    <!-- Header Globale -->
+    <header class="mb-8 text-center bg-white p-6 rounded-xl shadow-md border-t-4 border-blue-500">
+        <h1 class="text-2xl font-bold mb-2 text-gray-700">💰 Gestione Spese</h1>
+        <div class="text-4xl font-extrabold" :class="saldoTotale >= 0 ? 'text-green-600' : 'text-red-500'">
+            {{ formatValuta(saldoTotale) }}
+        </div>
+        <p class="text-gray-500 text-sm mt-1">Saldo Attuale</p>
+        
+        <div class="flex justify-center gap-8 mt-4 text-sm md:text-base">
+            <div class="text-green-600 bg-green-50 px-3 py-1 rounded-full">
+                <i class="fa-solid fa-arrow-down"></i> Entrate: <span class="font-bold">{{ formatValuta(totaleEntrate) }}</span>
+            </div>
+            <div class="text-red-500 bg-red-50 px-3 py-1 rounded-full">
+                <i class="fa-solid fa-arrow-up"></i> Uscite: <span class="font-bold">{{ formatValuta(totaleUscite) }}</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- COLONNA SINISTRA: Form Inserimento -->
+        <div class="md:col-span-1 bg-white p-6 rounded-xl shadow-md h-fit sticky top-4">
+            <h2 class="text-xl font-bold mb-4 border-b pb-2">Nuova Transazione</h2>
+            
+            <form @submit.prevent="aggiungiTransazione">
+                <div class="mb-3">
+                    <label class="block text-sm font-bold mb-1">Tipo</label>
+                    <div class="flex bg-gray-200 rounded p-1">
+                        <button type="button" @click="nuova.tipo = 'entrata'" 
+                            class="flex-1 py-1 rounded transition"
+                            :class="nuova.tipo === 'entrata' ? 'bg-green-500 text-white shadow' : 'text-gray-600'">
+                            Entrata
+                        </button>
+                        <button type="button" @click="nuova.tipo = 'uscita'" 
+                            class="flex-1 py-1 rounded transition"
+                            :class="nuova.tipo === 'uscita' ? 'bg-red-500 text-white shadow' : 'text-gray-600'">
+                            Uscita
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="block text-sm font-bold mb-1">Importo (€)</label>
+                    <input type="number" step="0.01" required v-model.number="nuova.importo" 
+                        class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400">
+                </div>
+
+                <div class="mb-3">
+                    <label class="block text-sm font-bold mb-1">Descrizione</label>
+                    <input type="text" required v-model="nuova.descrizione" placeholder="Es. Spesa, Stipendio..."
+                        class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400">
+                </div>
+
+                <div class="mb-3">
+                    <label class="block text-sm font-bold mb-1">Categoria</label>
+                    <select v-model="nuova.categoria" class="w-full p-2 border rounded bg-white">
+                        <option v-for="cat in categorieDisponibili" :key="cat" :value="cat">{{ cat }}</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="block text-sm font-bold mb-1">Data</label>
+                    <input type="date" required v-model="nuova.data" 
+                        class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400">
+                </div>
+
+                <button type="submit" 
+                    class="w-full py-2 bg-blue-600 text-white font-bold rounded hover:bg-blue-700 transition">
+                    Aggiungi
+                </button>
+            </form>
+
+            <div class="mt-8 pt-4 border-t">
+                <h3 class="text-sm font-bold mb-2 text-gray-500">Aggiungi Categoria</h3>
+                <div class="flex gap-2">
+                    <input v-model="nuovaCategoria" placeholder="Nuova cat..." class="w-full p-1 border rounded text-sm">
+                    <button @click="creaCategoria" class="bg-gray-700 text-white px-3 rounded text-sm">+</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLONNA DESTRA: Lista Movimenti con Grafici -->
+        <div class="md:col-span-2 space-y-8">
+            
+            <div v-if="transazioni.length === 0" class="text-center py-10 bg-white rounded-xl shadow-md">
+                <p class="text-gray-400 text-lg">Nessuna transazione registrata.</p>
+                <p class="text-sm text-gray-400">Aggiungi la tua prima spesa a sinistra.</p>
+            </div>
+
+            <!-- Loop Mesi -->
+            <div v-for="(gruppo, mese) in transazioniPerMese" :key="mese" class="bg-white rounded-xl shadow-md overflow-hidden">
+                
+                <!-- Header Mese -->
+                <div class="bg-gray-50 p-4 border-b flex justify-between items-center">
+                    <h3 class="font-bold text-gray-700 capitalize text-lg">{{ mese }}</h3>
+                    <span class="text-sm px-3 py-1 rounded font-mono font-bold"
+                        :class="calcolaTotaleMese(gruppo) >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
+                        {{ formatValuta(calcolaTotaleMese(gruppo)) }}
+                    </span>
+                </div>
+
+                <!-- SEZIONE GRAFICO (Solo se ci sono uscite) -->
+                <div v-if="haUscite(gruppo)" class="p-5 bg-white border-b">
+                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Analisi Uscite</h4>
+                    <div class="flex flex-col sm:flex-row items-center gap-6">
+                        
+                        <!-- Il Grafico a Torta (CSS Conic Gradient) -->
+                        <div class="relative w-32 h-32 rounded-full shadow-inner flex-shrink-0"
+                             :style="getStileGrafico(gruppo)">
+                            <!-- Buco centrale per effetto ciambella -->
+                            <div class="absolute inset-0 m-auto w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-sm">
+                                <span class="text-xs font-bold text-gray-400">Uscite</span>
+                            </div>
+                        </div>
+
+                        <!-- Legenda Dettagliata -->
+                        <div class="w-full">
+                            <div v-for="stat in getStatisticheCategoria(gruppo)" :key="stat.cat" class="flex items-center justify-between text-sm mb-2 last:mb-0">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-3 h-3 rounded-full" :style="{ backgroundColor: stat.colore }"></span>
+                                    <span class="text-gray-600">{{ stat.cat }}</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="font-bold text-gray-700">{{ formatValuta(stat.importo) }}</span>
+                                    <span class="text-xs text-gray-400 w-8 text-right">{{ stat.perc }}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Lista Transazioni -->
+                <ul>
+                    <li v-for="t in gruppo" :key="t.id" class="p-4 border-b last:border-0 flex justify-between items-center hover:bg-gray-50 transition group">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm"
+                                :style="{ backgroundColor: getColorCategoria(t.categoria, t.tipo) }">
+                                <i :class="getIcona(t.categoria)"></i>
+                            </div>
+                            <div>
+                                <p class="font-bold text-gray-800">{{ t.descrizione }}</p>
+                                <p class="text-xs text-gray-500">{{ t.data }} • <span class="bg-gray-100 px-1 rounded">{{ t.categoria }}</span></p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="font-bold font-mono" :class="t.tipo === 'entrata' ? 'text-green-600' : 'text-red-500'">
+                                {{ t.tipo === 'entrata' ? '+' : '-' }} {{ formatValuta(t.importo) }}
+                            </span>
+                            <button @click="eliminaTransazione(t.id)" class="text-gray-300 hover:text-red-500 transition opacity-0 group-hover:opacity-100 focus:opacity-100">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    const { createApp } = Vue;
+
+    createApp({
+        data() {
+            return {
+                nuovaCategoria: '',
+                // Lista categorie base
+                categorie: ['Casa', 'Cibo', 'Trasporti', 'Svago', 'Salute', 'Stipendio', 'Investimenti', 'Shopping', 'Bollette'],
+                // Palette colori per le categorie (per il grafico)
+                paletteColori: [
+                    '#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#6366F1', 
+                    '#8B5CF6', '#EC4899', '#14B8A6', '#F97316', '#64748B'
+                ],
+                nuova: {
+                    tipo: 'uscita',
+                    importo: '',
+                    descrizione: '',
+                    categoria: 'Cibo',
+                    data: new Date().toISOString().split('T')[0]
+                },
+                transazioni: []
+            }
+        },
+        computed: {
+            saldoTotale() {
+                return this.transazioni.reduce((acc, t) => t.tipo === 'entrata' ? acc + t.importo : acc - t.importo, 0);
+            },
+            totaleEntrate() {
+                return this.transazioni.filter(t => t.tipo === 'entrata').reduce((acc, t) => acc + t.importo, 0);
+            },
+            totaleUscite() {
+                return this.transazioni.filter(t => t.tipo === 'uscita').reduce((acc, t) => acc + t.importo, 0);
+            },
+            categorieDisponibili() {
+                return this.categorie.sort();
+            },
+            transazioniPerMese() {
+                const gruppi = {};
+                const ordinate = [...this.transazioni].sort((a, b) => new Date(b.data) - new Date(a.data));
+                
+                ordinate.forEach(t => {
+                    const data = new Date(t.data);
+                    // Formato: "ottobre 2023"
+                    const chiaveMese = data.toLocaleString('it-IT', { month: 'long', year: 'numeric' });
+                    if (!gruppi[chiaveMese]) gruppi[chiaveMese] = [];
+                    gruppi[chiaveMese].push(t);
+                });
+                return gruppi;
+            }
+        },
+        methods: {
+            aggiungiTransazione() {
+                if(this.nuova.importo <= 0 || !this.nuova.descrizione) return;
+                const transazione = {
+                    id: Date.now(),
+                    ...this.nuova,
+                    importo: parseFloat(this.nuova.importo)
+                };
+                this.transazioni.unshift(transazione);
+                this.salvaDati();
+                this.nuova.importo = '';
+                this.nuova.descrizione = '';
+            },
+            eliminaTransazione(id) {
+                if(confirm('Eliminare questa transazione?')) {
+                    this.transazioni = this.transazioni.filter(t => t.id !== id);
+                    this.salvaDati();
+                }
+            },
+            creaCategoria() {
+                if(this.nuovaCategoria && !this.categorie.includes(this.nuovaCategoria)) {
+                    this.categorie.push(this.nuovaCategoria);
+                    this.nuovaCategoria = '';
+                    this.salvaDati();
+                }
+            },
+            calcolaTotaleMese(transazioniMese) {
+                return transazioniMese.reduce((acc, t) => t.tipo === 'entrata' ? acc + t.importo : acc - t.importo, 0);
+            },
+            formatValuta(valore) {
+                return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(valore);
+            },
+            getIcona(categoria) {
+                const map = {
+                    'Casa': 'fa-house', 'Cibo': 'fa-utensils', 'Trasporti': 'fa-car',
+                    'Svago': 'fa-gamepad', 'Salute': 'fa-heart-pulse', 'Stipendio': 'fa-money-bill-wave',
+                    'Shopping': 'fa-bag-shopping', 'Bollette': 'fa-bolt', 'Investimenti': 'fa-chart-line'
+                };
+                return map[categoria] || 'fa-tag';
+            },
+            // --- LOGICA GRAFICI ---
+            haUscite(transazioni) {
+                return transazioni.some(t => t.tipo === 'uscita');
+            },
+            getColorCategoria(categoria, tipo) {
+                if (tipo === 'entrata') return '#10B981'; // Verde fisso per entrate
+                // Genera un indice basato sul nome della categoria per assegnare sempre lo stesso colore
+                let hash = 0;
+                for (let i = 0; i < categoria.length; i++) hash = categoria.charCodeAt(i) + ((hash << 5) - hash);
+                const index = Math.abs(hash) % this.paletteColori.length;
+                return this.paletteColori[index];
+            },
+            getStatisticheCategoria(transazioni) {
+                // Filtra solo uscite
+                const uscite = transazioni.filter(t => t.tipo === 'uscita');
+                const totaleUscite = uscite.reduce((acc, t) => acc + t.importo, 0);
+                
+                // Raggruppa per categoria
+                const stats = {};
+                uscite.forEach(t => {
+                    if(!stats[t.categoria]) {
+                        stats[t.categoria] = { 
+                            cat: t.categoria, 
+                            importo: 0, 
+                            colore: this.getColorCategoria(t.categoria, 'uscita') 
+                        };
+                    }
+                    stats[t.categoria].importo += t.importo;
+                });
+
+                // Calcola percentuali e trasforma in array
+                return Object.values(stats)
+                    .map(item => ({
+                        ...item,
+                        perc: ((item.importo / totaleUscite) * 100).toFixed(1)
+                    }))
+                    .sort((a, b) => b.importo - a.importo); // Ordina dal più costoso
+            },
+            getStileGrafico(transazioni) {
+                const stats = this.getStatisticheCategoria(transazioni);
+                let gradientString = '';
+                let currentPerc = 0;
+
+                stats.forEach((stat, index) => {
+                    const percStart = currentPerc;
+                    const percEnd = currentPerc + parseFloat(stat.perc);
+                    gradientString += `${stat.colore} ${percStart}% ${percEnd}%${index < stats.length - 1 ? ', ' : ''}`;
+                    currentPerc = percEnd;
+                });
+
+                return {
+                    background: `conic-gradient(${gradientString})`
+                };
+            },
+            // --- PERSISTENZA ---
+            salvaDati() {
+                localStorage.setItem('wallet_transazioni', JSON.stringify(this.transazioni));
+                localStorage.setItem('wallet_categorie', JSON.stringify(this.categorie));
+            },
+            caricaDati() {
+                const salvati = localStorage.getItem('wallet_transazioni');
+                const catSalvate = localStorage.getItem('wallet_categorie');
+                if (salvati) this.transazioni = JSON.parse(salvati);
+                if (catSalvate) this.categorie = JSON.parse(catSalvate);
+            }
+        },
+        mounted() {
+            this.caricaDati();
+        }
+    }).mount('#app');
+</script>
+
+</body>
+</html>
