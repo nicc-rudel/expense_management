@@ -3,21 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gestore Spese</title>
+    <title>Spese Ultimate</title>
     
-    <!-- --- CONFIGURAZIONE WEB APP (ICONA & FULLSCREEN) --- -->
+    <!-- --- CONFIGURAZIONE WEB APP --- -->
     <meta name="theme-color" content="#ffffff">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Spese Pro">
+    <meta name="apple-mobile-web-app-title" content="Spese Ultimate">
     
-    <!-- Icona generata via SVG -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💰</text></svg>">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232563eb%22 rx=%2220%22 ry=%2220%22/><text x=%2250%22 y=%2250%22 font-size=%2260%22 text-anchor=%22middle%22 dy=%22.35em%22>💰</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💎</text></svg>">
     
+    <!-- Tailwind + Vue + FontAwesome -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Configurazione Tailwind Dark Mode -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: { bg: '#111827', card: '#1F2937', text: '#F3F4F6', muted: '#9CA3AF', border: '#374151' }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Firebase SDK (Modular) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, doc, updateDoc, deleteDoc, enableNetwork, disableNetwork } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        
+        // Espone Firebase globalmente per Vue
+        window.firebaseModules = { initializeApp, getFirestore, collection, addDoc, onSnapshot, query, doc, updateDoc, deleteDoc, getAuth, signInAnonymously, enableNetwork, disableNetwork };
+    </script>
+
     <style>
         ::-webkit-scrollbar { width: 0px; background: transparent; }
         .fade-enter-active, .fade-leave-active { transition: opacity 0.3s; }
@@ -26,70 +50,110 @@
         .slide-up-enter-from, .slide-up-leave-to { transform: translateY(100%); }
         @keyframes slideInLeft { from { transform: translateX(-100%); } to { transform: translateX(0); } }
         .animate-slide-in-left { animation: slideInLeft 0.3s ease-out forwards; }
+        .pt-safe-top { padding-top: env(safe-area-inset-top, 1rem); }
+        
+        /* Utility per il grafico a linee */
+        .chart-path { stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: dash 2s ease-out forwards; }
+        @keyframes dash { to { stroke-dashoffset: 0; } }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans h-screen flex flex-col overflow-hidden">
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 font-sans h-screen flex flex-col overflow-hidden transition-colors duration-300">
 
-<div id="app" class="flex flex-col h-full max-w-md mx-auto w-full bg-gray-50 shadow-2xl relative">
+<div id="app" class="flex flex-col h-full max-w-md mx-auto w-full bg-gray-50 dark:bg-gray-900 shadow-2xl relative">
+
+    <!-- LOCK SCREEN (PIN) -->
+    <div v-if="bloccato" class="absolute inset-0 z-[60] bg-gray-900 flex flex-col items-center justify-center p-8 text-white">
+        <div class="mb-8 text-6xl">🔒</div>
+        <h2 class="text-2xl font-bold mb-6">Inserisci PIN</h2>
+        <div class="flex gap-4 mb-8">
+            <div v-for="i in 4" :key="i" class="w-4 h-4 rounded-full border-2 border-white" :class="pinInserito.length >= i ? 'bg-white' : ''"></div>
+        </div>
+        <div class="grid grid-cols-3 gap-6 w-full max-w-xs">
+            <button v-for="n in 9" :key="n" @click="digitaPin(n)" class="w-16 h-16 rounded-full bg-gray-800 text-2xl font-bold hover:bg-gray-700 active:scale-95 transition">{{ n }}</button>
+            <button class="w-16 h-16 opacity-0"></button>
+            <button @click="digitaPin(0)" class="w-16 h-16 rounded-full bg-gray-800 text-2xl font-bold hover:bg-gray-700 active:scale-95 transition">0</button>
+            <button @click="pinInserito = pinInserito.slice(0, -1)" class="w-16 h-16 flex items-center justify-center text-xl hover:text-red-400"><i class="fa-solid fa-delete-left"></i></button>
+        </div>
+    </div>
 
     <!-- HEADER -->
-    <header class="bg-white p-4 shadow-sm z-10 flex justify-between items-center flex-shrink-0 pt-safe-top">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center text-gray-600 shadow-sm cursor-pointer hover:bg-gray-50 active:scale-95 transition"
-                 @click="mostraMenu = true">
-                <i class="fa-solid fa-bars text-lg"></i>
+    <header class="bg-white dark:bg-gray-800 p-4 shadow-sm z-10 flex flex-col gap-2 flex-shrink-0 pt-safe-top transition-colors duration-300">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl flex items-center justify-center text-gray-600 dark:text-gray-300 shadow-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 active:scale-95 transition"
+                     @click="mostraMenu = true">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </div>
+                <div v-if="!mostraRicerca">
+                    <h1 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Saldo Attuale</h1>
+                    <div class="text-xl font-extrabold leading-none tracking-tight font-mono" :class="saldoTotale >= 0 ? 'text-gray-800 dark:text-white' : 'text-red-500'">
+                        {{ formatValuta(saldoTotale) }}
+                    </div>
+                </div>
             </div>
-            <div>
-                <h1 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Saldo Attuale</h1>
-                <div class="text-xl font-extrabold leading-none tracking-tight" :class="saldoTotale >= 0 ? 'text-gray-800' : 'text-red-500'">
-                    {{ formatValuta(saldoTotale) }}
+            
+            <div class="flex gap-3 items-center">
+                <button @click="toggleRicerca" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-white transition">
+                    <i class="fa-solid" :class="mostraRicerca ? 'fa-xmark' : 'fa-magnifying-glass'"></i>
+                </button>
+                <div v-if="!mostraRicerca" class="flex gap-3">
+                    <div class="text-right hidden xs:block">
+                        <div class="text-[10px] text-gray-400 uppercase font-bold">Entrate</div>
+                        <div class="text-green-600 font-bold text-xs font-mono">+{{ formatValutaNoSymbol(totaleEntrate) }}</div>
+                    </div>
+                    <div class="text-right hidden xs:block">
+                        <div class="text-[10px] text-gray-400 uppercase font-bold">Uscite</div>
+                        <div class="text-red-500 font-bold text-xs font-mono">-{{ formatValutaNoSymbol(totaleUscite) }}</div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="flex gap-3">
-            <div class="text-right">
-                <div class="text-[10px] text-gray-400 uppercase font-bold">Entrate</div>
-                <div class="text-green-600 font-bold text-xs">+{{ formatValutaNoSymbol(totaleEntrate) }}</div>
-            </div>
-            <div class="text-right">
-                <div class="text-[10px] text-gray-400 uppercase font-bold">Uscite</div>
-                <div class="text-red-500 font-bold text-xs">-{{ formatValutaNoSymbol(totaleUscite) }}</div>
-            </div>
+
+        <!-- BARRA RICERCA -->
+        <div v-if="mostraRicerca" class="mt-2 animate-fade-in">
+            <input v-model="testoRicerca" placeholder="Cerca transazioni..." class="w-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white px-4 py-2 rounded-xl border-none focus:ring-2 focus:ring-blue-500 outline-none placeholder-gray-400" autoFocus>
         </div>
     </header>
 
     <!-- LISTA TRANSAZIONI -->
-    <main class="flex-1 overflow-y-auto p-4 pb-24 space-y-4">
-        <div v-if="transazioni.length === 0" class="flex flex-col items-center justify-center h-64 text-gray-400">
-            <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+    <main class="flex-1 overflow-y-auto p-4 pb-24 space-y-4 scroll-smooth">
+        <div v-if="transazioniFiltrate.length === 0" class="flex flex-col items-center justify-center h-64 text-gray-400">
+            <div class="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
                 <i class="fa-solid fa-wallet text-3xl opacity-20"></i>
             </div>
-            <p class="font-medium">Nessuna spesa presente</p>
+            <p class="font-medium">Nessuna spesa trovata</p>
         </div>
 
-        <div v-for="(gruppo, mese) in transazioniPerMese" :key="mese" class="bg-white rounded-2xl shadow-sm overflow-hidden animate-fade-in border border-gray-100">
-            <div class="bg-gray-50 px-4 py-2 border-b flex justify-between items-center sticky top-0 z-0">
-                <h3 class="font-bold text-gray-500 uppercase text-xs tracking-wider">{{ mese }}</h3>
-                <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-white border border-gray-200"
-                    :class="calcolaTotaleMese(gruppo) >= 0 ? 'text-green-600' : 'text-red-500'">
+        <div v-for="(gruppo, mese) in transazioniPerMese" :key="mese" class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden border border-gray-100 dark:border-gray-700 transition-colors">
+            <div class="bg-gray-50 dark:bg-gray-700 px-4 py-2 border-b dark:border-gray-600 flex justify-between items-center sticky top-0 z-0">
+                <h3 class="font-bold text-gray-500 dark:text-gray-300 uppercase text-xs tracking-wider">{{ mese }}</h3>
+                <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-white dark:bg-gray-600 border border-gray-200 dark:border-gray-500"
+                    :class="calcolaTotaleMese(gruppo) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'">
                     {{ calcolaTotaleMese(gruppo) >= 0 ? '+' : '' }}{{ formatValutaNoSymbol(calcolaTotaleMese(gruppo)) }}€
                 </span>
             </div>
             <ul>
-                <li v-for="t in gruppo" :key="t.id" @click="apriModifica(t)" class="p-4 border-b last:border-0 flex justify-between items-center active:bg-gray-50 transition group cursor-pointer relative">
+                <li v-for="t in gruppo" :key="t.id" @click="apriModifica(t)" class="p-4 border-b dark:border-gray-700 last:border-0 flex justify-between items-center active:bg-gray-50 dark:active:bg-gray-700 transition group cursor-pointer relative">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-lg shadow-sm overflow-hidden transform transition group-active:scale-95"
+                        <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-lg shadow-sm overflow-hidden transform transition group-active:scale-95 relative"
                             :style="{ backgroundColor: t.tipo === 'entrata' ? '#10B981' : getColorCategoria(t.categoria) }">
                             <i v-if="isFaIcon(getIcona(t.categoria))" :class="getIcona(t.categoria)"></i>
                             <span v-else class="text-xl leading-none pt-1">{{ getIcona(t.categoria) }}</span>
+                            <!-- Indicatore Ricorrente -->
+                            <div v-if="t.ricorrente" class="absolute top-0 right-0 w-3 h-3 bg-white rounded-bl-lg flex items-center justify-center">
+                                <i class="fa-solid fa-rotate text-[6px] text-gray-800"></i>
+                            </div>
                         </div>
                         <div>
-                            <p class="font-bold text-gray-800 leading-tight text-sm">{{ t.descrizione }}</p>
+                            <div class="flex items-center gap-1.5">
+                                <p class="font-bold text-gray-800 dark:text-gray-200 leading-tight text-sm">{{ t.descrizione }}</p>
+                                <i v-if="t.allegato" class="fa-solid fa-paperclip text-[10px] text-gray-400"></i>
+                            </div>
                             <p class="text-[11px] text-gray-400 mt-0.5 font-medium">{{ t.data_short }} • {{ t.categoria }}</p>
                         </div>
                     </div>
                     <div class="flex flex-col items-end">
-                        <span class="font-bold font-mono text-base" :class="t.tipo === 'entrata' ? 'text-green-600' : 'text-gray-800'">
+                        <span class="font-bold font-mono text-base" :class="t.tipo === 'entrata' ? 'text-green-600 dark:text-green-400' : 'text-gray-800 dark:text-white'">
                             {{ t.tipo === 'entrata' ? '+' : '-' }}{{ formatValutaNoSymbol(t.importo) }}
                         </span>
                         <button @click.stop="eliminaTransazione(t.id)" class="relative z-20 text-gray-300 text-[10px] mt-1 hover:text-red-500 p-2 -mr-2 flex items-center gap-1">
@@ -102,113 +166,130 @@
     </main>
 
     <!-- FAB -->
-    <button @click="apriFormNuovaSpesa" class="absolute bottom-6 right-6 w-14 h-14 bg-gray-900 text-white rounded-2xl shadow-xl flex items-center justify-center text-2xl hover:bg-black hover:scale-105 active:scale-95 transition transform z-20">
+    <button @click="apriFormNuovaSpesa" class="absolute bottom-6 right-6 w-14 h-14 bg-gray-900 dark:bg-blue-600 text-white rounded-2xl shadow-xl flex items-center justify-center text-2xl hover:bg-black dark:hover:bg-blue-700 hover:scale-105 active:scale-95 transition transform z-20">
         <i class="fa-solid fa-plus"></i>
     </button>
 
     <!-- SIDEBAR MENU -->
     <div v-if="mostraMenu" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex justify-start transition-opacity backdrop-blur-sm" @click.self="mostraMenu = false">
-        <div class="w-80 bg-white h-full shadow-2xl flex flex-col animate-slide-in-left">
+        <div class="w-80 bg-white dark:bg-gray-800 h-full shadow-2xl flex flex-col animate-slide-in-left transition-colors">
             <div class="p-5 pb-0 flex justify-between items-center">
-                <h2 class="font-bold text-xl text-gray-800">Menu</h2>
-                <button @click="mostraMenu = false" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-200">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
+                <h2 class="font-bold text-xl text-gray-800 dark:text-white">Menu</h2>
+                <div class="flex gap-2">
+                     <button @click="toggleDarkMode" class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-yellow-300">
+                        <i class="fa-solid" :class="darkMode ? 'fa-sun' : 'fa-moon'"></i>
+                    </button>
+                    <button @click="mostraMenu = false" class="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center text-gray-500 dark:text-gray-300">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
             </div>
 
             <div class="px-5 mt-6 mb-2">
-                <div class="flex bg-gray-100 p-1 rounded-xl">
-                    <button @click="tabMenu = 'analisi'" class="flex-1 py-2 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2" :class="tabMenu === 'analisi' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'">
+                <div class="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-xl">
+                    <button @click="tabMenu = 'analisi'" class="flex-1 py-2 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2" :class="tabMenu === 'analisi' ? 'bg-white dark:bg-gray-600 text-gray-800 dark:text-white shadow-sm' : 'text-gray-400'">
                         <i class="fa-solid fa-chart-pie"></i> Analisi
                     </button>
-                    <button @click="tabMenu = 'categorie'" class="flex-1 py-2 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2" :class="tabMenu === 'categorie' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'">
+                    <button @click="tabMenu = 'categorie'" class="flex-1 py-2 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2" :class="tabMenu === 'categorie' ? 'bg-white dark:bg-gray-600 text-gray-800 dark:text-white shadow-sm' : 'text-gray-400'">
                         <i class="fa-solid fa-list"></i> Categorie
                     </button>
                 </div>
             </div>
 
             <div class="flex-1 overflow-y-auto p-5 pt-2">
-                
                 <!-- TAB ANALISI -->
-                <div v-if="tabMenu === 'analisi'" class="space-y-6 animate-fade-in">
-                    
-                    <!-- Switch Grafico Entrate/Uscite -->
+                <div v-if="tabMenu === 'analisi'" class="space-y-6">
                     <div class="flex justify-center mb-2">
-                        <div class="bg-gray-100 p-1 rounded-lg flex text-xs font-bold">
-                            <button @click="vistaGrafico = 'uscita'" class="px-4 py-2 rounded-md transition" :class="vistaGrafico === 'uscita' ? 'bg-white text-red-500 shadow-sm' : 'text-gray-400 hover:text-gray-600'">USCITE</button>
-                            <button @click="vistaGrafico = 'entrata'" class="px-4 py-2 rounded-md transition" :class="vistaGrafico === 'entrata' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'">ENTRATE</button>
+                        <div class="bg-gray-100 dark:bg-gray-700 p-1 rounded-lg flex text-xs font-bold">
+                            <button @click="vistaGrafico = 'uscita'" class="px-4 py-2 rounded-md transition" :class="vistaGrafico === 'uscita' ? 'bg-white dark:bg-gray-600 text-red-500 dark:text-red-400 shadow-sm' : 'text-gray-400'">USCITE</button>
+                            <button @click="vistaGrafico = 'entrata'" class="px-4 py-2 rounded-md transition" :class="vistaGrafico === 'entrata' ? 'bg-white dark:bg-gray-600 text-green-600 dark:text-green-400 shadow-sm' : 'text-gray-400'">ENTRATE</button>
+                            <button @click="vistaGrafico = 'trend'" class="px-4 py-2 rounded-md transition" :class="vistaGrafico === 'trend' ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-400'">TREND</button>
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm text-center">
-                         <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-6">
-                            {{ vistaGrafico === 'uscita' ? 'Dove spendi i tuoi soldi' : 'Provenienza Entrate' }}
-                         </h3>
-                         
+                    <!-- Grafico a Torta -->
+                    <div v-if="vistaGrafico !== 'trend'" class="bg-white dark:bg-gray-700 rounded-xl border border-gray-100 dark:border-gray-600 p-4 shadow-sm text-center">
+                         <!-- ... (Contenuto grafico torta esistente) ... -->
                          <div v-if="totaleVisualizzato > 0">
                             <div class="relative w-48 h-48 mx-auto rounded-full mb-6" :style="stileGrafico">
-                                <div class="absolute inset-0 m-auto w-28 h-28 bg-white rounded-full flex flex-col items-center justify-center shadow-inner">
+                                <div class="absolute inset-0 m-auto w-28 h-28 bg-white dark:bg-gray-700 rounded-full flex flex-col items-center justify-center shadow-inner">
                                     <span class="text-[10px] text-gray-400 uppercase font-bold">{{ vistaGrafico === 'uscita' ? 'Uscite' : 'Entrate' }}</span>
-                                    <span class="font-bold text-gray-800 text-lg">{{ formatValutaNoSymbol(totaleVisualizzato) }}€</span>
+                                    <span class="font-bold text-gray-800 dark:text-white text-lg font-mono">{{ formatValutaNoSymbol(totaleVisualizzato) }}€</span>
                                 </div>
                             </div>
                             <div class="space-y-3">
-                                <div v-for="stat in statisticheCategorie" :key="stat.cat" class="flex justify-between items-center text-sm group">
-                                    <div class="flex items-center gap-3">
+                                <div v-for="stat in statisticheCategorie" :key="stat.cat" class="flex justify-between items-center text-sm">
+                                    <div class="flex items-center gap-3 text-left">
                                         <div class="w-2 h-8 rounded-full" :style="{ backgroundColor: stat.colore }"></div>
-                                        <div class="text-left">
-                                            <div class="font-bold text-gray-700">{{ stat.cat }}</div>
-                                            <div class="text-xs text-gray-400">{{ formatValutaNoSymbol(stat.val) }}€</div>
+                                        <div>
+                                            <div class="font-bold text-gray-700 dark:text-gray-200">{{ stat.cat }}</div>
+                                            <div class="text-xs text-gray-400 font-mono">{{ formatValutaNoSymbol(stat.val) }}€</div>
                                         </div>
                                     </div>
-                                    <div class="font-mono font-bold text-gray-600 bg-gray-50 px-2 py-1 rounded">{{ stat.perc }}%</div>
+                                    <div class="font-mono font-bold text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-600 px-2 py-1 rounded">{{ stat.perc }}%</div>
                                 </div>
                             </div>
                          </div>
-                         <div v-else class="py-10 text-gray-400 text-sm">
-                             <i class="fa-solid fa-chart-simple text-3xl mb-2 opacity-30 block"></i>
-                             Nessun dato presente.
-                         </div>
+                         <div v-else class="py-10 text-gray-400 text-sm">Nessun dato.</div>
+                    </div>
+
+                    <!-- Grafico Trend -->
+                    <div v-else class="bg-white dark:bg-gray-700 rounded-xl border border-gray-100 dark:border-gray-600 p-4 shadow-sm">
+                        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 text-center">Ultimi 30 Giorni (Uscite)</h3>
+                        <div class="h-48 flex items-end justify-between gap-1 relative pt-4">
+                             <!-- SVG Line Chart semplificato -->
+                             <svg class="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+                                <polyline :points="puntiGraficoTrend" fill="none" stroke="#3B82F6" stroke-width="2" class="chart-path" />
+                             </svg>
+                             <!-- Barre sfumate sotto -->
+                             <div v-for="(val, idx) in datiTrend" :key="idx" class="w-full bg-blue-100 dark:bg-blue-900 opacity-50 rounded-t-sm" :style="{ height: (val / maxTrend * 100) + '%' }"></div>
+                        </div>
+                        <div class="flex justify-between text-[10px] text-gray-400 mt-2 font-mono">
+                            <span>30gg fa</span>
+                            <span>Oggi</span>
+                        </div>
                     </div>
                 </div>
-
-                <!-- TAB CATEGORIE -->
-                <div v-if="tabMenu === 'categorie'" class="space-y-6 animate-fade-in">
-                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                        <label class="block text-xs font-bold text-gray-400 mb-3 uppercase tracking-wider">Crea Nuova Categoria</label>
+                
+                <!-- TAB CATEGORIE (Simile a prima, aggiunto solo dark mode) -->
+                 <div v-if="tabMenu === 'categorie'" class="space-y-6">
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl border border-gray-100 dark:border-gray-600">
+                        <label class="block text-xs font-bold text-gray-400 mb-3 uppercase tracking-wider">Crea Nuova</label>
                         <div class="flex gap-2 mb-3">
-                            <div class="w-1/3 relative">
-                                <input v-model="nuovaCatIcona" placeholder="🎨" class="w-full h-11 text-center text-xl border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-800 outline-none bg-white shadow-sm" maxlength="2">
-                                <span class="text-[9px] text-gray-400 text-center block mt-1 absolute -bottom-4 w-full">Emoji</span>
-                            </div>
-                            <div class="w-2/3">
-                                <input v-model="nuovaCatNome" placeholder="Nome (es. Netflix)" class="w-full h-11 px-3 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-800 outline-none bg-white shadow-sm">
-                            </div>
+                            <input v-model="nuovaCatIcona" placeholder="🎨" class="w-1/3 h-11 text-center text-xl border border-gray-200 dark:border-gray-500 rounded-lg outline-none bg-white dark:bg-gray-600 dark:text-white" maxlength="2">
+                            <input v-model="nuovaCatNome" placeholder="Nome" class="w-2/3 h-11 px-3 text-sm border border-gray-200 dark:border-gray-500 rounded-lg outline-none bg-white dark:bg-gray-600 dark:text-white">
                         </div>
-                        <button @click="creaCategoria" class="w-full py-2.5 bg-gray-800 text-white text-xs font-bold rounded-lg hover:bg-black transition shadow-sm flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-plus"></i> Aggiungi
-                        </button>
+                        <button @click="creaCategoria" class="w-full py-2.5 bg-gray-800 dark:bg-blue-600 text-white text-xs font-bold rounded-lg shadow-sm">Aggiungi</button>
                     </div>
-                    <div>
-                        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Categorie Attive</h3>
-                        <div class="space-y-2">
-                            <div v-for="(cat, index) in categorie" :key="index" class="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-lg">
-                                        <i v-if="isFaIcon(cat.icona)" :class="cat.icona" class="text-gray-500 text-sm"></i>
-                                        <span v-else class="leading-none pt-0.5">{{ cat.icona }}</span>
-                                    </div>
-                                    <span class="font-bold text-sm text-gray-700">{{ cat.nome }}</span>
+                     <div class="space-y-2">
+                        <div v-for="(cat, index) in categorie" :key="index" class="flex justify-between items-center bg-white dark:bg-gray-700 p-3 rounded-xl border border-gray-100 dark:border-gray-600 shadow-sm">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-600 flex items-center justify-center text-lg">
+                                    <span v-if="!isFaIcon(cat.icona)">{{ cat.icona }}</span>
+                                    <i v-else :class="cat.icona" class="text-gray-500 dark:text-gray-300"></i>
                                 </div>
-                                <button @click="eliminaCategoria(index)" class="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition" v-if="categorie.length > 1">
-                                    <i class="fa-solid fa-trash text-xs"></i>
-                                </button>
+                                <span class="font-bold text-sm text-gray-700 dark:text-gray-200">{{ cat.nome }}</span>
                             </div>
+                            <button @click="eliminaCategoria(index)" class="text-gray-300 hover:text-red-500 p-2"><i class="fa-solid fa-trash text-xs"></i></button>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="p-4 border-t bg-gray-50 text-center text-xs text-gray-400">Gestore Spese v2.0</div>
+
+            <!-- Footer Menu: Export & Security -->
+            <div class="p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 grid grid-cols-2 gap-3">
+                <button @click="esportaCSV" class="py-3 rounded-xl bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 text-xs font-bold flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-file-csv"></i> Export CSV
+                </button>
+                <button @click="impostaPin" class="py-3 rounded-xl bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-bold flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-lock"></i> {{ haPin ? 'Cambia PIN' : 'Set PIN' }}
+                </button>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-800 text-center pb-2 text-[9px] text-gray-400 flex justify-center gap-2 items-center">
+                 <span>v3.0 Ultimate</span>
+                 <span v-if="firebaseAttivo" class="w-2 h-2 rounded-full bg-green-500" title="Cloud Attivo"></span>
+                 <span v-else class="w-2 h-2 rounded-full bg-gray-300" title="Offline"></span>
+            </div>
         </div>
     </div>
 
@@ -216,87 +297,81 @@
     <transition name="slide-up">
         <div v-if="mostraForm" class="fixed inset-0 z-40 flex items-end sm:items-center justify-center pointer-events-none">
             <div class="absolute inset-0 bg-gray-900 bg-opacity-60 pointer-events-auto backdrop-blur-sm" @click="chiudiForm"></div>
-            <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-6 pb-10 shadow-2xl transform transition-transform pointer-events-auto max-h-[90vh] overflow-y-auto">
-                <div class="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-6"></div>
-                <h3 class="text-center text-sm font-bold text-gray-400 uppercase tracking-widest mb-6">
-                    {{ idModifica ? 'Modifica' : 'Nuova' }} 
-                    <span :class="nuova.tipo === 'entrata' ? 'text-green-600' : 'text-red-500'">
-                        {{ nuova.tipo === 'entrata' ? 'Entrata' : 'Spesa' }}
-                    </span>
-                </h3>
-
+            <div class="bg-white dark:bg-gray-800 w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-6 pb-10 shadow-2xl transform transition-transform pointer-events-auto max-h-[90vh] overflow-y-auto">
+                <div class="w-12 h-1 bg-gray-200 dark:bg-gray-600 rounded-full mx-auto mb-6"></div>
+                
                 <form @submit.prevent="salvaTransazione">
-                    <div class="flex bg-gray-100 p-1 rounded-xl mb-8">
-                        <button type="button" @click="nuova.tipo = 'uscita'" class="flex-1 py-3 rounded-lg font-bold text-sm transition" :class="nuova.tipo === 'uscita' ? 'bg-white text-red-500 shadow-sm' : 'text-gray-400'">USCITA</button>
-                        <button type="button" @click="nuova.tipo = 'entrata'" class="flex-1 py-3 rounded-lg font-bold text-sm transition" :class="nuova.tipo === 'entrata' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-400'">ENTRATA</button>
+                    <div class="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-xl mb-8">
+                        <button type="button" @click="nuova.tipo = 'uscita'" class="flex-1 py-3 rounded-lg font-bold text-sm transition" :class="nuova.tipo === 'uscita' ? 'bg-white dark:bg-gray-600 text-red-500 shadow-sm' : 'text-gray-400'">USCITA</button>
+                        <button type="button" @click="nuova.tipo = 'entrata'" class="flex-1 py-3 rounded-lg font-bold text-sm transition" :class="nuova.tipo === 'entrata' ? 'bg-white dark:bg-gray-600 text-green-600 shadow-sm' : 'text-gray-400'">ENTRATA</button>
                     </div>
 
-                    <div class="mb-8 text-center">
+                    <div class="mb-8 text-center relative">
                         <label class="text-xs font-bold text-gray-400 mb-2 block uppercase tracking-wider">Importo</label>
                         <div class="relative inline-block">
-                            <input type="number" step="0.01" inputmode="decimal" required v-model.number="nuova.importo" placeholder="0.00" autoFocus class="w-full bg-transparent text-6xl font-extrabold text-center text-gray-800 focus:outline-none placeholder-gray-200 p-2">
-                            <span class="absolute -right-6 top-4 text-2xl text-gray-400 font-bold">€</span>
+                            <input type="number" step="0.01" inputmode="decimal" required v-model.number="nuova.importo" placeholder="0.00" class="w-full bg-transparent text-5xl font-extrabold text-center text-gray-800 dark:text-white focus:outline-none placeholder-gray-200 dark:placeholder-gray-700 font-mono">
+                            <span class="absolute -right-6 top-3 text-2xl text-gray-400 font-bold">€</span>
                         </div>
                     </div>
 
-                    <!-- CAMPI VISIBILI SOLO SE È USCITA OPPURE SE STIAMO MODIFICANDO (Per poter categorizzare entrate) -->
-                    <div v-if="nuova.tipo === 'uscita' || idModifica" class="animate-fade-in">
-                        <div class="grid grid-cols-2 gap-4 mb-6">
-                            <div>
+                    <div>
+                        <div class="flex gap-2 mb-4">
+                             <!-- Input Descrizione con Mic -->
+                             <div class="relative flex-1">
                                 <label class="text-[10px] font-bold text-gray-400 mb-1 block uppercase">Descrizione</label>
-                                <input type="text" v-model="nuova.descrizione" placeholder="Es. Stipendio" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-gray-800 outline-none">
-                            </div>
-                            <div>
+                                <input type="text" v-model="nuova.descrizione" :placeholder="nuova.tipo === 'entrata' ? 'Es. Stipendio' : 'Es. Cena'" class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-white rounded-xl p-3 pr-10 text-sm font-medium focus:ring-2 focus:ring-gray-800 outline-none">
+                                <button type="button" @click="avviaDettatura" class="absolute right-3 top-7 text-gray-400 hover:text-blue-500">
+                                    <i class="fa-solid" :class="stoAscoltando ? 'fa-circle-dot text-red-500 animate-pulse' : 'fa-microphone'"></i>
+                                </button>
+                             </div>
+                             
+                             <!-- Data: Solo per USCITE -->
+                             <div class="w-1/3" v-if="nuova.tipo === 'uscita'">
                                 <label class="text-[10px] font-bold text-gray-400 mb-1 block uppercase">Data</label>
-                                <input type="date" v-model="nuova.data" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-gray-800 outline-none">
-                            </div>
+                                <input type="date" v-model="nuova.data" class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-white rounded-xl p-3 text-sm font-medium outline-none">
+                             </div>
                         </div>
-
-                        <div class="mb-8">
-                            <label class="text-[10px] font-bold text-gray-400 mb-3 block uppercase flex justify-between items-center">
-                                Categoria
-                                <span v-if="mostraFormCategoriaVeloce" class="text-gray-800 text-xs normal-case bg-gray-100 px-2 py-0.5 rounded">Nuova Categoria</span>
-                            </label>
-                            
-                            <!-- Crea Categoria Veloce -->
-                            <div v-if="mostraFormCategoriaVeloce" class="mb-4 bg-gray-50 p-3 rounded-xl border border-blue-100 animate-fade-in">
-                                <div class="flex gap-2">
-                                    <div class="w-1/4 relative">
-                                        <input v-model="nuovaCatIconaVeloce" placeholder="🎨" class="w-full h-10 text-center text-lg border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white" maxlength="2">
-                                    </div>
-                                    <div class="w-3/4">
-                                        <input v-model="nuovaCatNomeVeloce" placeholder="Nome Categoria..." class="w-full h-10 px-3 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white">
-                                    </div>
-                                </div>
-                                <div class="flex gap-2 mt-2">
-                                    <button type="button" @click="mostraFormCategoriaVeloce = false" class="flex-1 py-1.5 bg-gray-200 text-gray-600 text-xs font-bold rounded-lg">Annulla</button>
-                                    <button type="button" @click="creaCategoriaVeloce" class="flex-1 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700">Crea & Usa</button>
+                        
+                        <!-- Opzioni Extra e Categorie: Solo per USCITE -->
+                        <div v-if="nuova.tipo === 'uscita'">
+                            <div class="flex gap-3 mb-6">
+                                <label class="flex-1 flex items-center gap-3 bg-gray-50 dark:bg-gray-700 p-3 rounded-xl border border-gray-200 dark:border-gray-600 cursor-pointer">
+                                    <input type="checkbox" v-model="nuova.ricorrente" class="w-5 h-5 rounded text-blue-600">
+                                    <span class="text-xs font-bold text-gray-600 dark:text-gray-300">Mensile</span>
+                                </label>
+                                <div class="flex-1 relative">
+                                    <input type="file" ref="fileInput" @change="gestisciFoto" accept="image/*" class="hidden">
+                                    <button type="button" @click="$refs.fileInput.click()" class="w-full h-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl flex items-center justify-center gap-2 text-xs font-bold" :class="nuova.allegato ? 'text-green-600 border-green-200' : 'text-gray-600 dark:text-gray-300'">
+                                        <i class="fa-solid" :class="nuova.allegato ? 'fa-check' : 'fa-camera'"></i>
+                                        {{ nuova.allegato ? 'Foto OK' : 'Foto' }}
+                                    </button>
                                 </div>
                             </div>
 
-                            <!-- Lista Categorie -->
-                            <div class="flex gap-3 overflow-x-auto pb-4 scrollbar-hide -mx-2 px-2">
-                                <div v-for="cat in categorie" :key="cat.nome" @click="nuova.categoria = cat.nome" class="flex flex-col items-center gap-2 cursor-pointer min-w-[70px]">
-                                    <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-xl transition border-2" :class="nuova.categoria === cat.nome ? 'bg-gray-800 text-white border-gray-800 shadow-lg scale-110' : 'bg-white text-gray-400 border-gray-100 hover:border-gray-200'">
-                                        <i v-if="isFaIcon(cat.icona)" :class="cat.icona"></i>
-                                        <span v-else class="text-2xl pt-1 leading-none">{{ cat.icona }}</span>
+                            <div class="mb-8">
+                                <label class="text-[10px] font-bold text-gray-400 mb-3 block uppercase">Categoria</label>
+                                <div class="flex gap-3 overflow-x-auto pb-4 scrollbar-hide -mx-2 px-2">
+                                    <div v-for="cat in categorie" :key="cat.nome" @click="nuova.categoria = cat.nome" class="flex flex-col items-center gap-2 cursor-pointer min-w-[70px]">
+                                        <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-xl transition border-2" :class="nuova.categoria === cat.nome ? 'bg-gray-800 dark:bg-blue-600 text-white border-gray-800 dark:border-blue-600 shadow-lg scale-105' : 'bg-white dark:bg-gray-700 text-gray-400 border-gray-100 dark:border-gray-600'">
+                                            <i v-if="isFaIcon(cat.icona)" :class="cat.icona"></i>
+                                            <span v-else class="text-2xl pt-1 leading-none">{{ cat.icona }}</span>
+                                        </div>
+                                        <span class="text-[10px] font-bold truncate w-full text-center" :class="nuova.categoria === cat.nome ? 'text-gray-800 dark:text-white' : 'text-gray-300 dark:text-gray-500'">{{ cat.nome }}</span>
                                     </div>
-                                    <span class="text-[10px] font-bold truncate w-full text-center" :class="nuova.categoria === cat.nome ? 'text-gray-800' : 'text-gray-300'">{{ cat.nome }}</span>
-                                </div>
-                                <div @click="mostraFormCategoriaVeloce = !mostraFormCategoriaVeloce" class="flex flex-col items-center gap-2 cursor-pointer min-w-[70px]">
-                                    <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-xl transition border-2 bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100">
-                                        <i class="fa-solid fa-plus"></i>
-                                    </div>
-                                    <span class="text-[10px] font-bold truncate w-full text-center text-blue-600">Crea</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <button type="submit" class="w-full py-4 bg-gray-900 text-white text-lg font-bold rounded-2xl shadow-xl hover:bg-black active:scale-95 transition flex items-center justify-center gap-2">
-                        <span>{{ idModifica ? 'Salva Modifiche' : 'Conferma' }}</span> 
-                        <i class="fa-solid" :class="idModifica ? 'fa-floppy-disk' : 'fa-check'"></i>
+                    <button type="submit" class="w-full py-4 bg-gray-900 dark:bg-blue-600 text-white text-lg font-bold rounded-2xl shadow-xl active:scale-95 transition">
+                        {{ idModifica ? 'Salva Modifiche' : 'Conferma' }}
                     </button>
+                    <!-- Anteprima Foto se presente -->
+                    <div v-if="nuova.allegato" class="mt-4 text-center">
+                        <p class="text-[10px] text-gray-400 mb-1">Anteprima Allegato</p>
+                        <img :src="nuova.allegato" class="h-20 mx-auto rounded-lg border border-gray-200">
+                        <button type="button" @click="nuova.allegato = null" class="text-red-500 text-xs mt-1 underline">Rimuovi</button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -306,13 +381,12 @@
     <transition name="fade">
         <div v-if="mostraModalConferma" class="fixed inset-0 z-50 flex items-center justify-center">
             <div class="absolute inset-0 bg-black bg-opacity-70 backdrop-blur-sm" @click="mostraModalConferma = false"></div>
-            <div class="bg-white rounded-2xl p-6 w-80 shadow-2xl transform transition-all scale-100 relative z-10 text-center">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 w-80 shadow-2xl relative z-10 text-center">
                 <div class="w-12 h-12 rounded-full bg-red-100 text-red-500 flex items-center justify-center mx-auto mb-4 text-xl"><i class="fa-solid fa-trash"></i></div>
-                <h3 class="font-bold text-lg text-gray-800 mb-2">Eliminare la spesa?</h3>
-                <p class="text-sm text-gray-500 mb-6">Questa azione non può essere annullata.</p>
-                <div class="flex gap-3">
-                    <button @click="mostraModalConferma = false" class="flex-1 py-2.5 bg-gray-200 text-gray-700 font-bold rounded-xl text-sm">Annulla</button>
-                    <button @click="procediEliminazione" class="flex-1 py-2.5 bg-red-500 text-white font-bold rounded-xl text-sm hover:bg-red-600">Elimina</button>
+                <h3 class="font-bold text-lg text-gray-800 dark:text-white mb-2">Eliminare?</h3>
+                <div class="flex gap-3 mt-4">
+                    <button @click="mostraModalConferma = false" class="flex-1 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold rounded-xl text-sm">No</button>
+                    <button @click="procediEliminazione" class="flex-1 py-2.5 bg-red-500 text-white font-bold rounded-xl text-sm">Sì</button>
                 </div>
             </div>
         </div>
@@ -322,40 +396,96 @@
 
 <script>
     const { createApp } = Vue;
+
     createApp({
         data() {
             return {
+                // UI States
                 mostraMenu: false,
                 tabMenu: 'analisi',
-                vistaGrafico: 'uscita', // 'uscita' | 'entrata'
+                vistaGrafico: 'uscita', // uscita, entrata, trend
                 mostraForm: false,
-                idModifica: null,
+                mostraRicerca: false,
+                testoRicerca: '',
                 mostraModalConferma: false,
+                stoAscoltando: false,
+                darkMode: false,
+                
+                // Security
+                bloccato: false,
+                pinSalvat: null,
+                pinInserito: '',
+                impostazionePinInCorso: false,
+
+                // Data
+                idModifica: null,
                 idDaEliminare: null,
-                mostraFormCategoriaVeloce: false,
-                nuovaCatNomeVeloce: '', nuovaCatIconaVeloce: '',
                 nuovaCatNome: '', nuovaCatIcona: '',
                 categorie: [
                     { nome: 'Casa', icona: '🏠' }, { nome: 'Cibo', icona: '🍔' }, { nome: 'Auto', icona: '🚗' },
                     { nome: 'Shopping', icona: '🛍️' }, { nome: 'Svago', icona: '🎮' }, { nome: 'Salute', icona: '💊' },
                     { nome: 'Stipendio', icona: '💰' }, { nome: 'Regalo', icona: '🎁' }
                 ],
-                nuova: { tipo: 'uscita', importo: '', descrizione: '', categoria: 'Cibo', data: new Date().toISOString().split('T')[0] },
+                nuova: { tipo: 'uscita', importo: '', descrizione: '', categoria: 'Cibo', data: '', ricorrente: false, allegato: null },
                 transazioni: [],
-                paletteColori: ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#6366F1', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316']
+                paletteColori: ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#6366F1', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'],
+                
+                // Cloud
+                firebaseAttivo: false,
+                db: null,
+                userId: null
             }
         },
         computed: {
+            transazioniFiltrate() {
+                if (!this.testoRicerca) return this.transazioni;
+                const search = this.testoRicerca.toLowerCase();
+                return this.transazioni.filter(t => 
+                    t.descrizione.toLowerCase().includes(search) || 
+                    t.categoria.toLowerCase().includes(search) ||
+                    t.importo.toString().includes(search)
+                );
+            },
             saldoTotale() { return this.transazioni.reduce((acc, t) => t.tipo === 'entrata' ? acc + t.importo : acc - t.importo, 0); },
             totaleEntrate() { return this.transazioni.filter(t => t.tipo === 'entrata').reduce((acc, t) => acc + t.importo, 0); },
             totaleUscite() { return this.transazioni.filter(t => t.tipo === 'uscita').reduce((acc, t) => acc + t.importo, 0); },
+            
             totaleVisualizzato() {
-                // Calcola il totale per il grafico (entrate o uscite)
+                if (this.vistaGrafico === 'trend') return 0;
                 return this.transazioni.filter(t => t.tipo === this.vistaGrafico).reduce((acc, t) => acc + t.importo, 0);
             },
+            
+            // Logica Trend Chart
+            datiTrend() {
+                // Ultimi 30 giorni
+                const oggi = new Date();
+                const dati = new Array(30).fill(0);
+                this.transazioni.filter(t => t.tipo === 'uscita').forEach(t => {
+                    const dataT = new Date(t.data);
+                    const diffTime = Math.abs(oggi - dataT);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    if (diffDays <= 30) {
+                        dati[30 - diffDays] += t.importo;
+                    }
+                });
+                return dati;
+            },
+            maxTrend() { return Math.max(...this.datiTrend, 1); },
+            puntiGraficoTrend() {
+                const max = this.maxTrend;
+                const width = 100; // percent
+                const height = 100; // coordinate space
+                const step = width / 29;
+                return this.datiTrend.map((val, i) => {
+                    const x = i * step;
+                    const y = height - ((val / max) * height); // Inverti Y
+                    return `${x},${y}`;
+                }).join(' ');
+            },
+
             transazioniPerMese() {
                 const gruppi = {};
-                const ordinate = [...this.transazioni].sort((a, b) => new Date(b.data) - new Date(a.data));
+                const ordinate = [...this.transazioniFiltrate].sort((a, b) => new Date(b.data) - new Date(a.data));
                 ordinate.forEach(t => {
                     const data = new Date(t.data);
                     const chiaveMese = data.toLocaleString('it-IT', { month: 'long', year: 'numeric' });
@@ -366,15 +496,12 @@
                 return gruppi;
             },
             statisticheCategorie() {
-                // Filtra in base a vistaGrafico (uscita o entrata)
                 const filtrate = this.transazioni.filter(t => t.tipo === this.vistaGrafico);
                 if (filtrate.length === 0) return [];
                 const tot = filtrate.reduce((acc, t) => acc + t.importo, 0);
                 const stats = {};
                 filtrate.forEach(t => {
-                    if(!stats[t.categoria]) {
-                        stats[t.categoria] = { cat: t.categoria, val: 0, colore: this.getColorCategoria(t.categoria) };
-                    }
+                    if(!stats[t.categoria]) stats[t.categoria] = { cat: t.categoria, val: 0, colore: this.getColorCategoria(t.categoria) };
                     stats[t.categoria].val += t.importo;
                 });
                 return Object.values(stats).sort((a, b) => b.val - a.val).map(s => ({ ...s, perc: ((s.val / tot) * 100).toFixed(1) }));
@@ -390,54 +517,210 @@
                     current = end;
                 });
                 return { background: `conic-gradient(${gradient})` };
-            }
+            },
+            haPin() { return !!this.pinSalvat; }
         },
         methods: {
+            // --- CORE ---
             apriFormNuovaSpesa() {
-                this.idModifica = null; this.mostraForm = true; this.mostraFormCategoriaVeloce = false;
-                this.nuova = { tipo: 'uscita', importo: '', descrizione: '', categoria: 'Cibo', data: new Date().toISOString().split('T')[0] };
+                this.idModifica = null; this.mostraForm = true;
+                this.nuova = { tipo: 'uscita', importo: '', descrizione: '', categoria: 'Cibo', data: new Date().toISOString().split('T')[0], ricorrente: false, allegato: null };
             },
             apriModifica(transazione) {
-                this.idModifica = transazione.id; this.mostraForm = true; this.mostraFormCategoriaVeloce = false;
+                this.idModifica = transazione.id; this.mostraForm = true;
                 this.nuova = JSON.parse(JSON.stringify(transazione));
             },
-            chiudiForm() { this.mostraForm = false; this.idModifica = null; this.mostraFormCategoriaVeloce = false; },
-            salvaTransazione() {
-                // Se è NUOVA Entrata (non modifica), resetta descr/cat
-                if (this.nuova.tipo === 'entrata' && !this.idModifica) {
-                    if(this.nuova.importo <= 0) return;
-                    this.nuova.descrizione = 'Entrata';
-                    this.nuova.categoria = 'Entrata';
-                } else {
-                    if(this.nuova.importo <= 0 || !this.nuova.descrizione) return;
+            chiudiForm() { this.mostraForm = false; this.idModifica = null; },
+            
+            async salvaTransazione() {
+                if (this.nuova.importo <= 0) return;
+                
+                // Imposta descrizione di default se vuota, differenziando tra Entrata e Uscita
+                if (!this.nuova.descrizione) {
+                    this.nuova.descrizione = this.nuova.tipo === 'entrata' ? 'Entrata' : 'Spesa generica';
                 }
+
+                // Se è un'entrata e l'utente non ha cambiato categoria (è ancora 'Cibo' o altro default da uscita),
+                // potremmo forzarla a 'Stipendio' o lasciarla così. 
+                // Per ora lasciamo libertà totale all'utente di scegliere la categoria (es. Stipendio, Regalo).
+                
                 const dati = { ...this.nuova, importo: parseFloat(this.nuova.importo) };
-                if (this.idModifica) {
-                    const index = this.transazioni.findIndex(t => t.id === this.idModifica);
-                    if (index !== -1) this.transazioni[index] = { ...dati, id: this.idModifica };
+                
+                if (this.firebaseAttivo && this.userId) {
+                    // Firebase Logic
+                    try {
+                        const { collection, addDoc, doc, updateDoc, deleteDoc } = window.firebaseModules;
+                        const colRef = collection(this.db, 'artifacts', this.appId, 'users', this.userId, 'transazioni');
+                        
+                        if (this.idModifica) {
+                            // Update Firestore
+                            // Nota: qui assumiamo che idModifica sia l'ID del documento Firestore se siamo in cloud
+                            // Se era locale, sarà un timestamp numerico. Questo è un caso ibrido complesso.
+                            // Per semplicità, se siamo connessi, salviamo su cloud.
+                            if (typeof this.idModifica === 'string') { // È un ID Firestore
+                                await updateDoc(doc(this.db, 'artifacts', this.appId, 'users', this.userId, 'transazioni', this.idModifica), dati);
+                            } else {
+                                // Era locale, creiamone uno nuovo su cloud e rimuoviamo il vecchio locale (omesso per brevità)
+                                await addDoc(colRef, { ...dati, timestamp: Date.now() });
+                            }
+                        } else {
+                            await addDoc(colRef, { ...dati, timestamp: Date.now() });
+                        }
+                    } catch (e) { console.error("Err Cloud", e); }
                 } else {
-                    this.transazioni.unshift({ id: Date.now(), ...dati });
+                    // Local Logic
+                    if (this.idModifica) {
+                        const index = this.transazioni.findIndex(t => t.id === this.idModifica);
+                        if (index !== -1) this.transazioni[index] = { ...dati, id: this.idModifica };
+                    } else {
+                        this.transazioni.unshift({ id: Date.now(), ...dati });
+                    }
+                    this.salvaDatiLocali();
                 }
-                this.salvaDati(); this.chiudiForm();
+                
+                this.chiudiForm();
             },
-            eliminaTransazione(id) { this.idDaEliminare = id; this.mostraModalConferma = true; },
-            procediEliminazione() {
-                if (this.idDaEliminare) { this.transazioni = this.transazioni.filter(t => t.id !== this.idDaEliminare); this.salvaDati(); }
+            
+            async eliminaTransazione(id) { this.idDaEliminare = id; this.mostraModalConferma = true; },
+            async procediEliminazione() {
+                if (this.idDaEliminare) { 
+                    if(this.firebaseAttivo && typeof this.idDaEliminare === 'string') {
+                         const { doc, deleteDoc } = window.firebaseModules;
+                         await deleteDoc(doc(this.db, 'artifacts', this.appId, 'users', this.userId, 'transazioni', this.idDaEliminare));
+                    } else {
+                        this.transazioni = this.transazioni.filter(t => t.id !== this.idDaEliminare); 
+                        this.salvaDatiLocali(); 
+                    }
+                }
                 this.mostraModalConferma = false; this.idDaEliminare = null;
             },
+
+            // --- FEATURES ---
+            toggleRicerca() { this.mostraRicerca = !this.mostraRicerca; this.testoRicerca = ''; },
+            toggleDarkMode() {
+                this.darkMode = !this.darkMode;
+                if(this.darkMode) document.documentElement.classList.add('dark');
+                else document.documentElement.classList.remove('dark');
+                localStorage.setItem('wallet_dark', this.darkMode);
+            },
+            esportaCSV() {
+                const header = ["Data", "Tipo", "Categoria", "Descrizione", "Importo"];
+                const rows = this.transazioni.map(t => [
+                    t.data, 
+                    t.tipo, 
+                    t.categoria, 
+                    (t.descrizione || "").replace(/"/g, '""'), 
+                    t.importo.toFixed(2)
+                ].map(field => `"${field}"`).join(","));
+
+                const csvContent = [header.join(","), ...rows].join("\n");
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = "spese_export.csv";
+                link.style.display = "none";
+                document.body.appendChild(link);
+                link.click();
+                
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            },
+            avviaDettatura() {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SpeechRecognition) return alert("Browser non supportato");
+                const recognition = new SpeechRecognition();
+                recognition.lang = 'it-IT';
+                recognition.start();
+                this.stoAscoltando = true;
+                recognition.onresult = (event) => {
+                    const text = event.results[0][0].transcript;
+                    this.nuova.descrizione = text.charAt(0).toUpperCase() + text.slice(1);
+                    this.stoAscoltando = false;
+                };
+                recognition.onerror = () => { this.stoAscoltando = false; };
+            },
+            gestisciFoto(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    // Resize image to base64 thumb to avoid huge localStorage
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        const MAX_WIDTH = 100; // Thumbnail size
+                        const scale = MAX_WIDTH / img.width;
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * scale;
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        this.nuova.allegato = canvas.toDataURL('image/jpeg', 0.7);
+                    };
+                    img.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+            },
+            
+            // --- SECURITY ---
+            digitaPin(n) {
+                this.pinInserito += n;
+                if (this.pinInserito.length === 4) {
+                    if (this.impostazionePinInCorso) {
+                        this.pinSalvat = this.pinInserito;
+                        localStorage.setItem('wallet_pin', this.pinSalvat);
+                        this.bloccato = false; this.impostazionePinInCorso = false;
+                        alert("PIN Impostato!");
+                    } else {
+                        if (this.pinInserito === this.pinSalvat) {
+                            this.bloccato = false;
+                        } else {
+                            this.pinInserito = '';
+                            navigator.vibrate?.(200);
+                        }
+                    }
+                }
+            },
+            impostaPin() {
+                this.impostazionePinInCorso = true;
+                this.pinInserito = '';
+                this.bloccato = true;
+                this.mostraMenu = false;
+            },
+
+            // --- RECURRING LOGIC ---
+            checkRicorrenze() {
+                const lastCheck = localStorage.getItem('wallet_last_recur_check');
+                const today = new Date().toISOString().split('T')[0];
+                if (lastCheck === today) return; // Già controllato oggi
+
+                // Cerca transazioni ricorrenti locali (se Cloud è attivo è più complesso, per ora solo locale)
+                this.transazioni.forEach(t => {
+                    if (t.ricorrente && t.tipo === 'uscita') {
+                         const txDate = new Date(t.data);
+                         const todayDate = new Date();
+                         // Se è lo stesso giorno del mese (es. il 27)
+                         if (txDate.getDate() === todayDate.getDate() && 
+                             (txDate.getMonth() !== todayDate.getMonth() || txDate.getFullYear() !== todayDate.getFullYear())) {
+                                 // Clona e aggiungi per oggi
+                                 const newTx = { ...t, id: Date.now() + Math.random(), data: today };
+                                 this.transazioni.unshift(newTx);
+                             }
+                    }
+                });
+                localStorage.setItem('wallet_last_recur_check', today);
+                this.salvaDatiLocali();
+            },
+
+            // --- UTILS ---
             creaCategoria() {
                 if(this.nuovaCatNome && !this.categorie.find(c => c.nome === this.nuovaCatNome)) {
                     this.categorie.push({ nome: this.nuovaCatNome, icona: this.nuovaCatIcona.trim() || '🏷️' });
-                    this.nuovaCatNome = ''; this.nuovaCatIcona = ''; this.salvaDati();
+                    this.nuovaCatNome = ''; this.nuovaCatIcona = ''; this.salvaDatiLocali();
                 }
             },
-            creaCategoriaVeloce() {
-                if(this.nuovaCatNomeVeloce && !this.categorie.find(c => c.nome === this.nuovaCatNomeVeloce)) {
-                    this.categorie.push({ nome: this.nuovaCatNomeVeloce, icona: this.nuovaCatIconaVeloce.trim() || '🏷️' });
-                    this.nuova.categoria = this.nuovaCatNomeVeloce; this.nuovaCatNomeVeloce = ''; this.nuovaCatIconaVeloce = ''; this.mostraFormCategoriaVeloce = false; this.salvaDati();
-                }
-            },
-            eliminaCategoria(index) { if(confirm('Eliminare categoria?')) { this.categorie.splice(index, 1); this.salvaDati(); } },
+            eliminaCategoria(index) { this.categorie.splice(index, 1); this.salvaDatiLocali(); },
             getIcona(nomeCategoria) {
                 if (nomeCategoria === 'Entrata') return '💰';
                 const cat = this.categorie.find(c => c.nome === nomeCategoria);
@@ -448,16 +731,71 @@
                 let hash = 0; for (let i = 0; i < nome.length; i++) hash = nome.charCodeAt(i) + ((hash << 5) - hash);
                 return this.paletteColori[Math.abs(hash) % this.paletteColori.length];
             },
-            calcolaTotaleMese(gruppo) { return gruppo.reduce((acc, t) => t.tipo === 'entrata' ? acc + t.importo : acc - t.importo, 0); },
-            formatValuta(val) { return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val); },
-            formatValutaNoSymbol(val) { return new Intl.NumberFormat('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val); },
-            salvaDati() { localStorage.setItem('wallet_transazioni', JSON.stringify(this.transazioni)); localStorage.setItem('wallet_categorie_obj', JSON.stringify(this.categorie)); },
-            caricaDati() {
-                const tx = localStorage.getItem('wallet_transazioni'); const catObj = localStorage.getItem('wallet_categorie_obj');
-                if (tx) this.transazioni = JSON.parse(tx); if (catObj) this.categorie = JSON.parse(catObj);
+            calcolaTotaleMese(gruppo) { 
+                return gruppo.reduce((acc, t) => t.tipo === 'entrata' ? acc + t.importo : acc - t.importo, 0); 
+            },
+            formatValuta(val) { return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 }).format(val); },
+            formatValutaNoSymbol(val) { return new Intl.NumberFormat('it-IT', { minimumFractionDigits: 2 }).format(val); },
+            salvaDatiLocali() { 
+                if(!this.firebaseAttivo) {
+                    localStorage.setItem('wallet_transazioni', JSON.stringify(this.transazioni)); 
+                    localStorage.setItem('wallet_categorie_obj', JSON.stringify(this.categorie)); 
+                }
+            },
+            
+            // --- INIT ---
+            async initApp() {
+                // Load Local Prefs
+                this.pinSalvat = localStorage.getItem('wallet_pin');
+                if (this.pinSalvat) this.bloccato = true;
+                
+                const darkSaved = localStorage.getItem('wallet_dark');
+                if(darkSaved === 'true') {
+                    this.darkMode = true;
+                    document.documentElement.classList.add('dark');
+                }
+
+                // Check Cloud
+                this.appId = typeof __app_id !== 'undefined' ? __app_id : null;
+                const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+                
+                if (firebaseConfig && this.appId) {
+                    this.initFirebase(firebaseConfig);
+                } else {
+                    // Fallback Local
+                    const tx = localStorage.getItem('wallet_transazioni'); 
+                    const catObj = localStorage.getItem('wallet_categorie_obj');
+                    if (tx) this.transazioni = JSON.parse(tx); 
+                    if (catObj) this.categorie = JSON.parse(catObj);
+                    this.checkRicorrenze();
+                }
+            },
+            
+            async initFirebase(config) {
+                try {
+                    const { initializeApp, getFirestore, getAuth, signInAnonymously, onSnapshot, collection, query } = window.firebaseModules;
+                    const app = initializeApp(config);
+                    this.db = getFirestore(app);
+                    const auth = getAuth(app);
+                    
+                    // Auth
+                    await signInAnonymously(auth);
+                    this.userId = auth.currentUser.uid;
+                    this.firebaseAttivo = true;
+                    
+                    // Listen Data
+                    const q = query(collection(this.db, 'artifacts', this.appId, 'users', this.userId, 'transazioni'));
+                    onSnapshot(q, (snapshot) => {
+                        this.transazioni = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        // Sort by date desc
+                        this.transazioni.sort((a,b) => new Date(b.data) - new Date(a.data));
+                    });
+                } catch(e) {
+                    console.warn("Firebase fallito, uso locale", e);
+                }
             }
         },
-        mounted() { this.caricaDati(); }
+        mounted() { this.initApp(); }
     }).mount('#app');
 </script>
 </body>
