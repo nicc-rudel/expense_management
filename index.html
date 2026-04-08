@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Gestione Spese</title>
     
-    <!-- --- CONFIGURAZIONE WEB APP --- -->
+    <!-- --- CONFIGil URAZIONE WEB APP --- -->
     <meta name="theme-color" content="#09090b">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -297,7 +297,7 @@
                     </button>
                 </div>
 
-                <div class="overflow-y-auto pb-safe-bottom scrollbar-hide flex-1 space-y-6">
+                <div class="overflow-y-auto overflow-x-hidden pb-safe-bottom scrollbar-hide flex-1 space-y-6 w-full">
                     <!-- TABS SENZA ANIMAZIONE ORIZZONTALE PESANTE -->
                     <div class="flex bg-zinc-100/80 dark:bg-zinc-800/80 p-1.5 rounded-2xl border border-white/60 dark:border-zinc-700/50 shadow-inner">
                         <button @click="tabMenu = 'analisi'" class="flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2" :class="tabMenu === 'analisi' ? 'bg-white dark:bg-zinc-700 text-brand-600 dark:text-white shadow-sm border border-zinc-200/50 dark:border-zinc-600/50' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'">
@@ -435,39 +435,39 @@
                 <!-- Grabber -->
                 <div class="w-16 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full mx-auto mb-6 shrink-0 shadow-inner"></div>
                 
-                <div class="overflow-y-auto pb-safe-bottom scrollbar-hide flex-1">
-                    <form @submit.prevent="salvaTransazione">
+                <div class="overflow-y-auto overflow-x-hidden pb-safe-bottom scrollbar-hide flex-1 w-full">
+                    <form @submit.prevent="salvaTransazione" class="w-full">
                         
                         <!-- Menu Form SENZA ANIMAZIONE ORIZZONTALE -->
-                        <div class="flex bg-zinc-100/80 dark:bg-zinc-800/80 p-1.5 rounded-2xl mb-8 border border-white/60 dark:border-zinc-700/50 shadow-inner">
+                        <div class="flex bg-zinc-100/80 dark:bg-zinc-800/80 p-1.5 rounded-2xl mb-8 border border-white/60 dark:border-zinc-700/50 shadow-inner w-full">
                             <button type="button" @click="nuova.tipo = 'uscita'" class="flex-1 py-3.5 rounded-xl font-bold text-sm transition-colors" :class="nuova.tipo === 'uscita' ? 'bg-white dark:bg-zinc-700 text-rose-500 shadow-md border border-zinc-200/50 dark:border-zinc-600/50' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'">USCITA</button>
                             <button type="button" @click="nuova.tipo = 'entrata'" class="flex-1 py-3.5 rounded-xl font-bold text-sm transition-colors" :class="nuova.tipo === 'entrata' ? 'bg-white dark:bg-zinc-700 text-emerald-500 shadow-md border border-zinc-200/50 dark:border-zinc-600/50' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'">ENTRATA</button>
                         </div>
 
                         <!-- Importo Gigante (Sleek) -->
-                        <div class="mb-8 text-center relative px-8 bg-zinc-50/50 dark:bg-zinc-800/30 rounded-[2rem] py-8 border border-zinc-100 dark:border-zinc-800 shadow-inner">
+                        <div class="mb-8 text-center relative px-4 sm:px-8 bg-zinc-50/50 dark:bg-zinc-800/30 rounded-[2rem] py-8 border border-zinc-100 dark:border-zinc-800 shadow-inner w-full overflow-hidden">
                             <label class="text-[10px] font-bold text-brand-500 mb-2 block uppercase tracking-widest"><i class="fa-solid fa-coins mr-1"></i> Importo</label>
                             <div class="relative inline-flex items-center justify-center w-full">
-                                <input type="number" step="0.01" inputmode="decimal" required v-model.number="nuova.importo" placeholder="0" class="w-full bg-transparent text-[5rem] leading-none font-black text-center text-zinc-900 dark:text-white focus:outline-none placeholder-zinc-200 dark:placeholder-zinc-800 font-mono tracking-tighter">
-                                <span class="absolute right-2 top-2 text-4xl text-zinc-300 dark:text-zinc-600 font-bold font-mono">€</span>
+                                <input type="number" step="0.01" inputmode="decimal" required v-model.number="nuova.importo" placeholder="0" class="w-full min-w-0 max-w-full bg-transparent text-[3.5rem] sm:text-[5rem] leading-none font-black text-center text-zinc-900 dark:text-white focus:outline-none placeholder-zinc-200 dark:placeholder-zinc-800 font-mono tracking-tighter">
+                                <span class="absolute right-0 sm:right-2 top-2 text-3xl sm:text-4xl text-zinc-300 dark:text-zinc-600 font-bold font-mono">€</span>
                             </div>
                         </div>
 
-                        <div class="space-y-5">
+                        <div class="space-y-5 w-full">
                             <!-- Input Descrizione -->
-                            <div class="relative group">
+                            <div class="relative group w-full">
                                 <div class="absolute inset-0 bg-brand-500/10 rounded-2xl blur-md opacity-0 group-focus-within:opacity-100 transition-opacity"></div>
-                                <input type="text" v-model="nuova.descrizione" :placeholder="nuova.tipo === 'entrata' ? 'Descrizione entrata...' : 'A cosa servono questi soldi?'" class="w-full bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200/50 dark:border-zinc-700 text-zinc-800 dark:text-white rounded-2xl p-5 pr-14 text-base font-bold focus:border-brand-500 outline-none transition-all placeholder-zinc-400 shadow-sm relative z-10">
+                                <input type="text" v-model="nuova.descrizione" :placeholder="nuova.tipo === 'entrata' ? 'Descrizione entrata...' : 'A cosa servono questi soldi?'" class="w-full min-w-0 max-w-full bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200/50 dark:border-zinc-700 text-zinc-800 dark:text-white rounded-2xl p-5 pr-14 text-base font-bold focus:border-brand-500 outline-none transition-all placeholder-zinc-400 shadow-sm relative z-10">
                                 <button type="button" @click="avviaDettatura" class="absolute right-5 top-1/2 transform -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center transition-colors z-20" :class="stoAscoltando ? 'bg-rose-100 text-rose-500 animate-pulse' : 'bg-zinc-100 dark:bg-zinc-700 text-zinc-400 hover:text-brand-500'">
                                     <i class="fa-solid fa-microphone text-sm"></i>
                                 </button>
                             </div>
                             
                             <!-- Data -->
-                            <div v-if="nuova.tipo === 'uscita'" class="relative group">
+                            <div v-if="nuova.tipo === 'uscita'" class="relative group w-full">
                                 <div class="absolute inset-0 bg-brand-500/10 rounded-2xl blur-md opacity-0 group-focus-within:opacity-100 transition-opacity"></div>
                                 <div class="absolute left-5 top-1/2 transform -translate-y-1/2 text-zinc-400 pointer-events-none z-20"><i class="fa-regular fa-calendar text-lg"></i></div>
-                                <input type="date" v-model="nuova.data" class="w-full bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200/50 dark:border-zinc-700 text-zinc-800 dark:text-white rounded-2xl p-5 pl-14 text-base font-bold outline-none focus:border-brand-500 transition-all text-zinc-600 dark:text-zinc-300 shadow-sm relative z-10">
+                                <input type="date" v-model="nuova.data" class="w-full block min-w-0 max-w-full appearance-none bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200/50 dark:border-zinc-700 text-zinc-800 dark:text-white rounded-2xl p-5 pl-14 text-base font-bold outline-none focus:border-brand-500 transition-all text-zinc-600 dark:text-zinc-300 shadow-sm relative z-10">
                             </div>
                         </div>
                         
