@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gestione Spese</title>
+    <title>Spese Ultimate</title>
     
     <!-- === PWA: MANIFEST E SERVICE WORKER === -->
     <link rel="manifest" href="manifest.json">
@@ -746,9 +746,17 @@
                 return this.categorie.filter(c => c.tipo === this.nuova.tipo);
             },
             sheetStyle() {
-                if (!this.isDraggingSheet) return {};
-                const delta = Math.max(0, this.touchCurrentY - this.touchStartY);
-                return { transform: `translateY(${delta}px)`, transition: 'none' };
+                if (!this.isDraggingSheet) {
+                    return { transform: 'translateY(0)', transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)' };
+                }
+                const delta = this.touchCurrentY - this.touchStartY;
+                // Effetto "elastico" (rubber-banding) se l'utente prova a trascinare verso l'alto
+                const translateY = delta < 0 ? delta * 0.15 : delta;
+                return { 
+                    transform: `translateY(${translateY}px)`, 
+                    transition: 'none',
+                    willChange: 'transform'
+                };
             },
             stileGrafico() {
                 const stats = this.statisticheCategorie;
