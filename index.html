@@ -21,7 +21,7 @@
     <meta name="theme-color" content="#09090b">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Gestione Spese">
+    <meta name="apple-mobile-web-app-title" content="Spese Ultimate">
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💎</text></svg>">
     
@@ -221,8 +221,9 @@
                     <li v-for="t in gruppo" :key="t.id" @click="apriModifica(t)" class="p-5 border-b border-zinc-100/50 dark:border-zinc-800/50 last:border-0 flex justify-between items-center hover:bg-white/80 dark:hover:bg-zinc-800/80 active:bg-zinc-100/80 dark:active:bg-zinc-800 transition-all group cursor-pointer relative overflow-hidden">
                         
                         <div class="flex items-center gap-4 relative z-10">
+                            <!-- Icon Container -->
                             <div class="w-14 h-14 rounded-[1.25rem] flex items-center justify-center text-white text-2xl shadow-sm border border-white/20 transform transition-transform group-active:scale-90 relative overflow-hidden"
-                                :style="{ backgroundColor: t.tipo === 'entrata' ? '#10B981' : getColorCategoria(t.categoria) }">
+                                :style="{ backgroundColor: t.tipo === 'entrata' && t.categoria === 'Entrata' ? '#10B981' : getColorCategoria(t.categoria) }">
                                 <div class="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent"></div>
                                 <i v-if="isFaIcon(getIcona(t.categoria))" :class="getIcona(t.categoria) + ' drop-shadow-md relative z-10'"></i>
                                 <span v-else class="text-3xl leading-none pt-1 drop-shadow-md relative z-10">{{ getIcona(t.categoria) }}</span>
@@ -232,6 +233,7 @@
                                 </div>
                             </div>
                             
+                            <!-- Texts -->
                             <div>
                                 <div class="flex items-center gap-2">
                                     <p class="font-bold text-zinc-900 dark:text-zinc-100 leading-tight text-base tracking-tight">{{ t.descrizione }}</p>
@@ -247,6 +249,7 @@
                             </div>
                         </div>
                         
+                        <!-- Amount & Actions -->
                         <div class="flex flex-col items-end relative z-10">
                             <div class="px-2.5 py-1 rounded-lg flex items-center font-bold font-mono text-base tracking-tight shadow-sm border" 
                                 :class="t.tipo === 'entrata' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/20' : 'bg-zinc-50 dark:bg-zinc-800 text-zinc-800 dark:text-white border-zinc-200 dark:border-zinc-700'">
@@ -392,28 +395,60 @@
                 </div>
                 
                 <!-- TAB CATEGORIE -->
-                 <div v-if="tabMenu === 'categorie'" class="space-y-6">
-                    <div class="bg-white/60 dark:bg-zinc-800/60 p-5 rounded-[2rem] border border-white/60 dark:border-zinc-700/50 shadow-glass dark:shadow-glass-dark">
-                        <label class="block text-[11px] font-bold text-zinc-500 mb-4 uppercase tracking-widest text-center">Crea Nuova Categoria</label>
-                        <div class="flex gap-3 mb-5">
-                            <input v-model="nuovaCatIcona" placeholder="🎨" class="w-16 h-14 text-center text-2xl border border-zinc-200/50 dark:border-zinc-600 rounded-2xl outline-none bg-zinc-50/50 dark:bg-zinc-900/50 dark:text-white shadow-inner focus:border-brand-500 transition-colors" maxlength="2">
-                            <input v-model="nuovaCatNome" placeholder="Nome Categoria" class="flex-1 h-14 px-4 text-sm border border-zinc-200/50 dark:border-zinc-600 rounded-2xl outline-none bg-zinc-50/50 dark:bg-zinc-900/50 dark:text-white shadow-inner focus:border-brand-500 transition-colors font-bold">
-                        </div>
-                        <button @click="creaCategoria" class="w-full py-3.5 bg-zinc-900 dark:bg-brand-600 text-white text-sm font-bold rounded-2xl shadow-lg hover:bg-zinc-800 dark:hover:bg-brand-500 active:scale-95 transition-all">Aggiungi</button>
-                    </div>
-                     
-                    <div class="space-y-3">
-                        <div v-for="(cat, index) in categorie" :key="index" class="flex justify-between items-center bg-white/50 dark:bg-zinc-800/50 p-4 rounded-2xl border border-white/60 dark:border-zinc-700/50 shadow-sm group hover:bg-white/80 dark:hover:bg-zinc-800/80 transition-all">
-                            <div class="flex items-center gap-4">
-                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-700 dark:to-zinc-800 flex items-center justify-center text-2xl border border-white/50 dark:border-zinc-600 shadow-sm">
-                                    <span v-if="!isFaIcon(cat.icona)" class="drop-shadow-sm">{{ cat.icona }}</span>
-                                    <i v-else :class="cat.icona" class="text-zinc-500 dark:text-zinc-300"></i>
-                                </div>
-                                <span class="font-bold text-sm text-zinc-800 dark:text-zinc-200 tracking-wide">{{ cat.nome }}</span>
+                 <div v-if="tabMenu === 'categorie'" class="space-y-6 pb-6">
+                    
+                    <!-- SEZIONE USCITE -->
+                    <div>
+                        <h3 class="text-xs font-bold text-rose-500 uppercase tracking-widest mb-3 flex items-center gap-2"><i class="fa-solid fa-arrow-down"></i> Categorie Uscite</h3>
+                        <div class="bg-white/60 dark:bg-zinc-800/60 p-4 rounded-[1.5rem] border border-white/60 dark:border-zinc-700/50 shadow-glass dark:shadow-glass-dark mb-4">
+                            <div class="flex gap-3 mb-4">
+                                <input v-model="nuovaCatIconaUscita" placeholder="🎨" class="w-14 h-12 text-center text-xl border border-zinc-200/50 dark:border-zinc-600 rounded-2xl outline-none bg-zinc-50/50 dark:bg-zinc-900/50 dark:text-white shadow-inner focus:border-rose-500 transition-colors" maxlength="2">
+                                <input v-model="nuovaCatNomeUscita" placeholder="Nuova Uscita..." class="flex-1 h-12 px-4 text-sm border border-zinc-200/50 dark:border-zinc-600 rounded-2xl outline-none bg-zinc-50/50 dark:bg-zinc-900/50 dark:text-white shadow-inner focus:border-rose-500 transition-colors font-bold">
                             </div>
-                            <button @click="eliminaCategoria(index)" class="text-zinc-300 hover:text-rose-500 w-10 h-10 flex items-center justify-center rounded-full hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors opacity-50 group-hover:opacity-100"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                            <button @click="creaCategoria('uscita')" class="w-full py-3 bg-zinc-900 dark:bg-rose-600 text-white text-xs font-bold rounded-xl shadow-lg hover:bg-zinc-800 dark:hover:bg-rose-500 active:scale-95 transition-all">Aggiungi Uscita</button>
+                        </div>
+                         
+                        <div class="space-y-2">
+                            <div v-for="(cat, index) in categorieUscite" :key="'u-'+cat.nome" class="flex justify-between items-center bg-white/50 dark:bg-zinc-800/50 p-3 rounded-2xl border border-white/60 dark:border-zinc-700/50 shadow-sm group hover:bg-white/80 dark:hover:bg-zinc-800/80 transition-all">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-700 dark:to-zinc-800 flex items-center justify-center text-xl border border-white/50 dark:border-zinc-600 shadow-sm">
+                                        <span v-if="!isFaIcon(cat.icona)" class="drop-shadow-sm">{{ cat.icona }}</span>
+                                        <i v-else :class="cat.icona" class="text-zinc-500 dark:text-zinc-300"></i>
+                                    </div>
+                                    <span class="font-bold text-sm text-zinc-800 dark:text-zinc-200">{{ cat.nome }}</span>
+                                </div>
+                                <button @click="eliminaCategoria(cat.nome, 'uscita')" class="text-zinc-300 hover:text-rose-500 w-8 h-8 flex items-center justify-center rounded-full hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors opacity-50 group-hover:opacity-100"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                            </div>
                         </div>
                     </div>
+
+                    <div class="h-px bg-zinc-200/50 dark:bg-zinc-700/50 w-full my-6"></div>
+
+                    <!-- SEZIONE ENTRATE -->
+                    <div>
+                        <h3 class="text-xs font-bold text-emerald-500 uppercase tracking-widest mb-3 flex items-center gap-2"><i class="fa-solid fa-arrow-up"></i> Categorie Entrate</h3>
+                        <div class="bg-white/60 dark:bg-zinc-800/60 p-4 rounded-[1.5rem] border border-white/60 dark:border-zinc-700/50 shadow-glass dark:shadow-glass-dark mb-4">
+                            <div class="flex gap-3 mb-4">
+                                <input v-model="nuovaCatIconaEntrata" placeholder="💰" class="w-14 h-12 text-center text-xl border border-zinc-200/50 dark:border-zinc-600 rounded-2xl outline-none bg-zinc-50/50 dark:bg-zinc-900/50 dark:text-white shadow-inner focus:border-emerald-500 transition-colors" maxlength="2">
+                                <input v-model="nuovaCatNomeEntrata" placeholder="Nuova Entrata..." class="flex-1 h-12 px-4 text-sm border border-zinc-200/50 dark:border-zinc-600 rounded-2xl outline-none bg-zinc-50/50 dark:bg-zinc-900/50 dark:text-white shadow-inner focus:border-emerald-500 transition-colors font-bold">
+                            </div>
+                            <button @click="creaCategoria('entrata')" class="w-full py-3 bg-zinc-900 dark:bg-emerald-600 text-white text-xs font-bold rounded-xl shadow-lg hover:bg-zinc-800 dark:hover:bg-emerald-500 active:scale-95 transition-all">Aggiungi Entrata</button>
+                        </div>
+                         
+                        <div class="space-y-2">
+                            <div v-for="(cat, index) in categorieEntrate" :key="'e-'+cat.nome" class="flex justify-between items-center bg-white/50 dark:bg-zinc-800/50 p-3 rounded-2xl border border-white/60 dark:border-zinc-700/50 shadow-sm group hover:bg-white/80 dark:hover:bg-zinc-800/80 transition-all">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-700 dark:to-zinc-800 flex items-center justify-center text-xl border border-white/50 dark:border-zinc-600 shadow-sm">
+                                        <span v-if="!isFaIcon(cat.icona)" class="drop-shadow-sm">{{ cat.icona }}</span>
+                                        <i v-else :class="cat.icona" class="text-zinc-500 dark:text-zinc-300"></i>
+                                    </div>
+                                    <span class="font-bold text-sm text-zinc-800 dark:text-zinc-200">{{ cat.nome }}</span>
+                                </div>
+                                <button @click="eliminaCategoria(cat.nome, 'entrata')" class="text-zinc-300 hover:text-rose-500 w-8 h-8 flex items-center justify-center rounded-full hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors opacity-50 group-hover:opacity-100"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    
                 </div>
             </div>
 
@@ -423,7 +458,7 @@
                     <button @click="esportaCSV" class="py-3.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center justify-center gap-2 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors backdrop-blur-sm shadow-sm">
                         <i class="fa-solid fa-file-csv text-sm"></i> Export
                     </button>
-                    <!-- MODIFICATO: Bottone gestione PIN -->
+                    <!-- Bottone gestione PIN -->
                     <button @click="gestisciPin" class="py-3.5 rounded-2xl bg-zinc-100/80 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 text-xs font-bold flex items-center justify-center gap-2 border border-zinc-200/50 dark:border-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors backdrop-blur-sm shadow-sm">
                         <i class="fa-solid text-sm" :class="haPin ? 'fa-lock text-brand-500' : 'fa-lock-open'"></i> {{ haPin ? 'Opzioni PIN' : 'Set PIN' }}
                     </button>
@@ -446,10 +481,16 @@
     <transition name="slide-up">
         <div v-if="mostraForm" class="fixed inset-x-0 bottom-0 z-[100] sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-md pointer-events-none flex justify-center items-end sm:items-center">
             
-            <div class="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-3xl w-full rounded-t-[2.5rem] sm:rounded-3xl shadow-[0_-20px_50px_rgba(0,0,0,0.2)] dark:shadow-[0_-20px_50px_rgba(0,0,0,0.6)] transform pointer-events-auto flex flex-col border-t border-white/50 dark:border-zinc-700/50 max-h-[95dvh] relative overflow-hidden">
+            <div class="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-3xl w-full rounded-t-[2.5rem] sm:rounded-3xl shadow-[0_-20px_50px_rgba(0,0,0,0.2)] dark:shadow-[0_-20px_50px_rgba(0,0,0,0.6)] transform pointer-events-auto flex flex-col border-t border-white/50 dark:border-zinc-700/50 max-h-[95dvh] relative overflow-hidden"
+                 :style="sheetStyle"
+                 @touchstart="startDrag"
+                 @touchmove="onDrag"
+                 @touchend="endDrag">
                 
                 <!-- Grabber -->
-                <div class="w-16 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full mx-auto my-4 shrink-0 shadow-inner"></div>
+                <div class="pt-4 pb-2 w-full flex justify-center cursor-grab active:cursor-grabbing shrink-0">
+                    <div class="w-16 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full shadow-inner pointer-events-none"></div>
+                </div>
                 
                 <!-- Area Scrollabile Form (con padding in fondo per il tasto) -->
                 <div class="overflow-y-auto overflow-x-hidden scrollbar-hide flex-1 w-full px-6 pb-[120px]">
@@ -460,8 +501,8 @@
                             <div class="absolute inset-y-1.5 w-[calc(50%-0.375rem)] bg-white dark:bg-zinc-700 rounded-xl shadow-md transition-all duration-300 border border-zinc-200/50 dark:border-zinc-600/50 -z-10"
                                  :class="nuova.tipo === 'entrata' ? 'left-[calc(50%+0.1875rem)]' : 'left-1.5'"></div>
                             
-                            <button type="button" @click="nuova.tipo = 'uscita'" class="flex-1 py-3.5 font-bold text-sm transition-colors" :class="nuova.tipo === 'uscita' ? 'text-rose-500' : 'text-zinc-500'">USCITA</button>
-                            <button type="button" @click="nuova.tipo = 'entrata'" class="flex-1 py-3.5 font-bold text-sm transition-colors" :class="nuova.tipo === 'entrata' ? 'text-emerald-500' : 'text-zinc-500'">ENTRATA</button>
+                            <button type="button" @click="cambiaTipo('uscita')" class="flex-1 py-3.5 font-bold text-sm transition-colors" :class="nuova.tipo === 'uscita' ? 'text-rose-500' : 'text-zinc-500'">USCITA</button>
+                            <button type="button" @click="cambiaTipo('entrata')" class="flex-1 py-3.5 font-bold text-sm transition-colors" :class="nuova.tipo === 'entrata' ? 'text-emerald-500' : 'text-zinc-500'">ENTRATA</button>
                         </div>
 
                         <!-- Importo Input -->
@@ -483,49 +524,48 @@
                                 </button>
                             </div>
                             
-                            <div v-if="nuova.tipo === 'uscita'" class="relative group w-full">
+                            <div class="relative group w-full">
                                 <div class="absolute inset-0 bg-brand-500/10 rounded-2xl blur-md opacity-0 group-focus-within:opacity-100 transition-opacity"></div>
                                 <div class="absolute left-5 top-1/2 transform -translate-y-1/2 text-zinc-400 pointer-events-none z-20"><i class="fa-regular fa-calendar text-lg"></i></div>
                                 <input type="date" v-model="nuova.data" class="w-full block min-w-0 appearance-none bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200/50 dark:border-zinc-700 text-zinc-800 dark:text-white rounded-2xl p-5 pl-14 text-base font-bold outline-none focus:border-brand-500 transition-all text-zinc-600 dark:text-zinc-300 shadow-sm relative z-10">
                             </div>
                         </div>
                         
-                        <!-- Opzioni e Categorie Uscite -->
-                        <div v-if="nuova.tipo === 'uscita'" class="space-y-6 w-full">
-                            <div class="flex gap-4 w-full">
-                                <label class="flex-1 flex items-center justify-center gap-3 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md p-4 rounded-2xl border border-zinc-200/50 dark:border-zinc-700 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-700/80 transition-colors shadow-sm">
-                                    <div class="relative w-6 h-6 flex items-center justify-center">
-                                        <input type="checkbox" v-model="nuova.ricorrente" class="peer appearance-none w-6 h-6 rounded-lg border-2 border-zinc-300 dark:border-zinc-600 checked:bg-brand-500 checked:border-brand-500 transition-colors">
-                                        <i class="fa-solid fa-check absolute text-white text-xs opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity"></i>
-                                    </div>
-                                    <span class="text-sm font-bold text-zinc-700 dark:text-zinc-300">Mensile</span>
-                                </label>
-                                
-                                <div class="flex-1 relative">
-                                    <input type="file" ref="fileInput" @change="gestisciFoto" accept="image/*" class="hidden">
-                                    <button type="button" @click="$refs.fileInput.click()" class="w-full h-full bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200/50 dark:border-zinc-700 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold transition-all hover:bg-zinc-50 dark:hover:bg-zinc-700/80 shadow-sm" :class="nuova.allegato ? 'text-emerald-600 border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/30' : 'text-zinc-700 dark:text-zinc-300'">
-                                        <i class="fa-solid" :class="nuova.allegato ? 'fa-image' : 'fa-camera'"></i>
-                                        {{ nuova.allegato ? 'Foto OK' : 'Allega' }}
-                                    </button>
+                        <!-- Opzioni Extra: Per Entrate e Uscite -->
+                        <div class="flex gap-4 w-full mt-2">
+                            <label class="flex-1 flex items-center justify-center gap-3 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md p-4 rounded-2xl border border-zinc-200/50 dark:border-zinc-700 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-700/80 transition-colors shadow-sm">
+                                <div class="relative w-6 h-6 flex items-center justify-center">
+                                    <input type="checkbox" v-model="nuova.ricorrente" class="peer appearance-none w-6 h-6 rounded-lg border-2 border-zinc-300 dark:border-zinc-600 checked:bg-brand-500 checked:border-brand-500 transition-colors">
+                                    <i class="fa-solid fa-check absolute text-white text-xs opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity"></i>
                                 </div>
+                                <span class="text-sm font-bold text-zinc-700 dark:text-zinc-300">Mensile</span>
+                            </label>
+                            
+                            <div class="flex-1 relative">
+                                <input type="file" ref="fileInput" @change="gestisciFoto" accept="image/*" class="hidden">
+                                <button type="button" @click="$refs.fileInput.click()" class="w-full h-full bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200/50 dark:border-zinc-700 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold transition-all hover:bg-zinc-50 dark:hover:bg-zinc-700/80 shadow-sm" :class="nuova.allegato ? 'text-emerald-600 border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/30' : 'text-zinc-700 dark:text-zinc-300'">
+                                    <i class="fa-solid" :class="nuova.allegato ? 'fa-image' : 'fa-camera'"></i>
+                                    {{ nuova.allegato ? 'Foto OK' : 'Allega' }}
+                                </button>
                             </div>
+                        </div>
 
-                            <div class="bg-zinc-50/50 dark:bg-zinc-800/30 p-4 rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-inner w-full">
-                                <label class="text-[10px] font-bold text-zinc-400 mb-4 block uppercase tracking-widest pl-2">Scegli Categoria</label>
-                                <div class="flex gap-4 overflow-x-auto pb-2 scrollbar-hide px-2 snap-x">
-                                    <div v-for="cat in categorie" :key="cat.nome" @click="nuova.categoria = cat.nome" class="flex flex-col items-center gap-2 cursor-pointer min-w-[70px] shrink-0 snap-center group">
-                                        <div class="w-14 h-14 rounded-[1.25rem] flex items-center justify-center text-2xl transition-all duration-300 border-2 relative overflow-hidden" 
-                                            :class="nuova.categoria === cat.nome ? 'bg-zinc-900 dark:bg-brand-600 text-white border-zinc-900 dark:border-brand-600 shadow-lg scale-110' : 'bg-white dark:bg-zinc-800 text-zinc-400 border-zinc-200 dark:border-zinc-700 shadow-sm group-hover:border-zinc-300 dark:group-hover:border-zinc-600'">
-                                            <div v-if="nuova.categoria === cat.nome" class="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0"></div>
-                                            <i v-if="isFaIcon(cat.icona)" :class="cat.icona + ' drop-shadow-sm relative z-10'"></i>
-                                            <span v-else class="text-2xl pt-1 leading-none drop-shadow-sm relative z-10">{{ cat.icona }}</span>
-                                        </div>
-                                        <span class="text-[10px] font-bold truncate w-full text-center tracking-wide mt-1 transition-colors" :class="nuova.categoria === cat.nome ? 'text-zinc-900 dark:text-white' : 'text-zinc-400 dark:text-zinc-500'">{{ cat.nome }}</span>
+                        <!-- Categorie: Per TUTTI i tipi (Entrate e Uscite) dinamiche -->
+                        <div class="bg-zinc-50/50 dark:bg-zinc-800/30 p-4 rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-inner w-full mt-4">
+                            <label class="text-[10px] font-bold text-zinc-400 mb-4 block uppercase tracking-widest pl-2">Scegli Categoria</label>
+                            <div class="flex gap-4 overflow-x-auto pb-2 scrollbar-hide px-2 snap-x">
+                                <div v-for="cat in categorieFormAttivo" :key="cat.nome" @click="nuova.categoria = cat.nome" class="flex flex-col items-center gap-2 cursor-pointer min-w-[70px] shrink-0 snap-center group">
+                                    <div class="w-14 h-14 rounded-[1.25rem] flex items-center justify-center text-2xl transition-all duration-300 border-2 relative overflow-hidden" 
+                                        :class="nuova.categoria === cat.nome ? 'bg-zinc-900 dark:bg-brand-600 text-white border-zinc-900 dark:border-brand-600 shadow-lg scale-110' : 'bg-white dark:bg-zinc-800 text-zinc-400 border-zinc-200 dark:border-zinc-700 shadow-sm group-hover:border-zinc-300 dark:group-hover:border-zinc-600'">
+                                        <div v-if="nuova.categoria === cat.nome" class="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0"></div>
+                                        <i v-if="isFaIcon(cat.icona)" :class="cat.icona + ' drop-shadow-sm relative z-10'"></i>
+                                        <span v-else class="text-2xl pt-1 leading-none drop-shadow-sm relative z-10">{{ cat.icona }}</span>
                                     </div>
+                                    <span class="text-[10px] font-bold truncate w-full text-center tracking-wide mt-1 transition-colors" :class="nuova.categoria === cat.nome ? 'text-zinc-900 dark:text-white' : 'text-zinc-400 dark:text-zinc-500'">{{ cat.nome }}</span>
                                 </div>
                             </div>
                         </div>
-                        <!-- Fine contenuto scrollabile -->
+                        
                     </form>
                 </div>
 
@@ -564,7 +604,7 @@
         </div>
     </transition>
 
-    <!-- 4) MODALE GESTIONE PIN (Nuovo) -->
+    <!-- 4) MODALE GESTIONE PIN -->
     <transition name="fade">
         <div v-if="mostraModalPin" class="fixed inset-0 z-[110] flex items-center justify-center p-4 pointer-events-none">
             <div class="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-3xl rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl relative z-10 text-center border border-white/50 dark:border-zinc-700/50 pointer-events-auto">
@@ -595,10 +635,15 @@
                 mostraRicerca: false,
                 testoRicerca: '',
                 mostraModalConferma: false,
-                mostraModalPin: false, // <-- Nuova variabile modale PIN
+                mostraModalPin: false,
                 stoAscoltando: false,
                 darkMode: false,
                 nascondiSaldo: false,
+                
+                // Variabili per Swipe-to-Close
+                touchStartY: 0,
+                touchCurrentY: 0,
+                isDraggingSheet: false,
                 
                 bloccato: false,
                 pinSalvat: null,
@@ -607,11 +652,12 @@
 
                 idModifica: null,
                 idDaEliminare: null,
-                nuovaCatNome: '', nuovaCatIcona: '',
+                nuovaCatNomeUscita: '', nuovaCatIconaUscita: '',
+                nuovaCatNomeEntrata: '', nuovaCatIconaEntrata: '',
                 categorie: [
-                    { nome: 'Casa', icona: '🏠' }, { nome: 'Cibo', icona: '🍔' }, { nome: 'Auto', icona: '🚗' },
-                    { nome: 'Shopping', icona: '🛍️' }, { nome: 'Svago', icona: '🎮' }, { nome: 'Salute', icona: '💊' },
-                    { nome: 'Stipendio', icona: '💰' }, { nome: 'Regalo', icona: '🎁' }
+                    { nome: 'Casa', icona: '🏠', tipo: 'uscita' }, { nome: 'Cibo', icona: '🍔', tipo: 'uscita' }, { nome: 'Auto', icona: '🚗', tipo: 'uscita' },
+                    { nome: 'Shopping', icona: '🛍️', tipo: 'uscita' }, { nome: 'Svago', icona: '🎮', tipo: 'uscita' }, { nome: 'Salute', icona: '💊', tipo: 'uscita' },
+                    { nome: 'Stipendio', icona: '💰', tipo: 'entrata' }, { nome: 'Regalo', icona: '🎁', tipo: 'entrata' }, { nome: 'Rimborsi', icona: '💶', tipo: 'entrata' }
                 ],
                 nuova: { tipo: 'uscita', importo: '', descrizione: '', categoria: 'Cibo', data: '', ricorrente: false, allegato: null },
                 transazioni: [],
@@ -690,6 +736,20 @@
                 });
                 return Object.values(stats).sort((a, b) => b.val - a.val).map(s => ({ ...s, perc: ((s.val / tot) * 100).toFixed(1) }));
             },
+            categorieUscite() {
+                return this.categorie.filter(c => c.tipo === 'uscita');
+            },
+            categorieEntrate() {
+                return this.categorie.filter(c => c.tipo === 'entrata');
+            },
+            categorieFormAttivo() {
+                return this.categorie.filter(c => c.tipo === this.nuova.tipo);
+            },
+            sheetStyle() {
+                if (!this.isDraggingSheet) return {};
+                const delta = Math.max(0, this.touchCurrentY - this.touchStartY);
+                return { transform: `translateY(${delta}px)`, transition: 'none' };
+            },
             stileGrafico() {
                 const stats = this.statisticheCategorie;
                 if (!stats.length) return { background: '#eee' };
@@ -710,11 +770,35 @@
                 localStorage.setItem('wallet_nascondi_saldo', this.nascondiSaldo);
             },
             
+            // --- GESTIONE SWIPE TO CLOSE ---
+            startDrag(e) {
+                let el = e.target;
+                while (el && el !== e.currentTarget) {
+                    if (el.scrollTop > 0) return; // Permette lo scroll nativo se non siamo in cima
+                    el = el.parentElement;
+                }
+                this.touchStartY = e.touches[0].clientY;
+                this.touchCurrentY = this.touchStartY;
+                this.isDraggingSheet = true;
+            },
+            onDrag(e) {
+                if (!this.isDraggingSheet) return;
+                this.touchCurrentY = e.touches[0].clientY;
+            },
+            endDrag() {
+                if (!this.isDraggingSheet) return;
+                this.isDraggingSheet = false;
+                const delta = this.touchCurrentY - this.touchStartY;
+                if (delta > 100) { // Se trascinato giù di almeno 100px, chiudi il modale
+                    this.chiudiModali();
+                }
+            },
+
             chiudiModali() {
                 this.mostraMenu = false;
                 this.chiudiForm();
                 this.mostraModalConferma = false;
-                this.mostraModalPin = false; // Chiude anche modale PIN se si clicca fuori
+                this.mostraModalPin = false;
             },
 
             apriFormNuovaSpesa() {
@@ -726,16 +810,24 @@
                 this.nuova = JSON.parse(JSON.stringify(transazione));
             },
             chiudiForm() { this.mostraForm = false; this.idModifica = null; },
+
+            // Funzione intelligente per il cambio tipo: Entrata/Uscita
+            cambiaTipo(nuovoTipo) {
+                this.nuova.tipo = nuovoTipo;
+                // Imposta in automatico la prima categoria disponibile della nuova lista
+                const catDisponibili = this.categorie.filter(c => c.tipo === nuovoTipo);
+                if (catDisponibili.length > 0) {
+                    this.nuova.categoria = catDisponibili[0].nome;
+                } else {
+                    this.nuova.categoria = '';
+                }
+            },
             
             async salvaTransazione() {
                 if (this.nuova.importo <= 0) return;
                 
                 if (!this.nuova.descrizione) {
                     this.nuova.descrizione = this.nuova.tipo === 'entrata' ? 'Entrata' : 'Spesa generica';
-                }
-
-                if (this.nuova.tipo === 'entrata') {
-                    this.nuova.categoria = 'Entrata';
                 }
 
                 const dati = { ...this.nuova, importo: parseFloat(this.nuova.importo) };
@@ -848,19 +940,18 @@
                 reader.readAsDataURL(file);
             },
             
-            // --- NUOVA GESTIONE PIN ---
             gestisciPin() {
                 if (this.haPin) {
-                    this.mostraModalPin = true; // Se ha il pin, apre il menu di scelta
+                    this.mostraModalPin = true;
                 } else {
-                    this.impostaPin(); // Se non lo ha, glielo fa creare direttamente
+                    this.impostaPin();
                 }
             },
             impostaPinDaModal() {
                 this.mostraModalPin = false;
                 setTimeout(() => {
                     this.impostaPin();
-                }, 300); // Piccolo delay per far chiudere morbidamente il modale
+                }, 300);
             },
             rimuoviPin() {
                 this.pinSalvat = null;
@@ -897,7 +988,7 @@
                 if (lastCheck === today) return;
 
                 this.transazioni.forEach(t => {
-                    if (t.ricorrente && t.tipo === 'uscita') {
+                    if (t.ricorrente) {
                          const txDate = new Date(t.data);
                          const todayDate = new Date();
                          if (txDate.getDate() === todayDate.getDate() && 
@@ -911,13 +1002,21 @@
                 this.salvaDatiLocali();
             },
 
-            creaCategoria() {
-                if(this.nuovaCatNome && !this.categorie.find(c => c.nome === this.nuovaCatNome)) {
-                    this.categorie.push({ nome: this.nuovaCatNome, icona: this.nuovaCatIcona.trim() || '🏷️' });
-                    this.nuovaCatNome = ''; this.nuovaCatIcona = ''; this.salvaDatiLocali();
+            creaCategoria(tipo) {
+                let nome = tipo === 'uscita' ? this.nuovaCatNomeUscita : this.nuovaCatNomeEntrata;
+                let icona = tipo === 'uscita' ? this.nuovaCatIconaUscita : this.nuovaCatIconaEntrata;
+                
+                if (nome && !this.categorie.find(c => c.nome === nome && c.tipo === tipo)) {
+                    this.categorie.push({ nome: nome, icona: icona.trim() || (tipo === 'uscita' ? '🏷️' : '💰'), tipo: tipo });
+                    if(tipo === 'uscita') { this.nuovaCatNomeUscita = ''; this.nuovaCatIconaUscita = ''; }
+                    else { this.nuovaCatNomeEntrata = ''; this.nuovaCatIconaEntrata = ''; }
+                    this.salvaDatiLocali();
                 }
             },
-            eliminaCategoria(index) { this.categorie.splice(index, 1); this.salvaDatiLocali(); },
+            eliminaCategoria(nome, tipo) { 
+                this.categorie = this.categorie.filter(c => !(c.nome === nome && c.tipo === tipo)); 
+                this.salvaDatiLocali(); 
+            },
             getIcona(nomeCategoria) {
                 if (nomeCategoria === 'Entrata') return '💰';
                 const cat = this.categorie.find(c => c.nome === nomeCategoria);
@@ -964,7 +1063,21 @@
                     const tx = localStorage.getItem('wallet_transazioni'); 
                     const catObj = localStorage.getItem('wallet_categorie_obj');
                     if (tx) this.transazioni = JSON.parse(tx); 
-                    if (catObj) this.categorie = JSON.parse(catObj);
+                    if (catObj) {
+                        let parsedCats = JSON.parse(catObj);
+                        // Assicura che le categorie vecchie siano divise correttamente in Entrate/Uscite
+                        parsedCats = parsedCats.map(c => {
+                            if (!c.tipo) {
+                                if (['Stipendio', 'Regalo', 'Entrata', 'Rimborsi'].includes(c.nome)) {
+                                    c.tipo = 'entrata';
+                                } else {
+                                    c.tipo = 'uscita';
+                                }
+                            }
+                            return c;
+                        });
+                        this.categorie = parsedCats;
+                    }
                     this.checkRicorrenze();
                 }
             },
