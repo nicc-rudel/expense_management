@@ -66,7 +66,7 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap');
         
-        ::-webkit-scrollbar { width: 0px; background: transparent; }
+        ::-webkit-scrollbar { width: 0px; height: 0px; background: transparent; }
         
         /* Animazioni UI */
         .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
@@ -146,7 +146,7 @@
     <header class="bg-white/60 dark:bg-zinc-950/60 backdrop-blur-2xl p-6 z-10 flex flex-col gap-6 flex-shrink-0 pt-safe-top border-b border-white/40 dark:border-zinc-800/50 sticky top-0 shadow-sm">
         <div class="flex justify-between items-center relative z-20">
             <div class="w-11 h-11 bg-white/80 dark:bg-zinc-800/80 border border-white/50 dark:border-zinc-700/50 rounded-full flex items-center justify-center text-zinc-700 dark:text-zinc-300 shadow-sm cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-700 active:scale-90 transition-all backdrop-blur-md"
-                 @click="mostraMenu = true">
+                 @click="apriMenu">
                 <i class="fa-solid fa-bars-staggered text-[15px]"></i>
             </div>
             
@@ -191,7 +191,7 @@
             <div class="relative group">
                 <div class="absolute inset-0 bg-brand-500/20 rounded-2xl blur-md opacity-0 group-focus-within:opacity-100 transition-opacity"></div>
                 <i class="fa-solid fa-magnifying-glass absolute left-5 top-1/2 transform -translate-y-1/2 text-brand-500 dark:text-brand-400 z-10"></i>
-                <input v-model="testoRicerca" placeholder="Cerca spese, entrate, categorie..." class="w-full bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl text-zinc-900 dark:text-white pl-12 pr-5 py-4 rounded-2xl border border-white/60 dark:border-zinc-700/50 focus:border-brand-500 dark:focus:border-brand-400 outline-none placeholder-zinc-400 dark:placeholder-zinc-500 shadow-glass dark:shadow-glass-dark transition-all relative z-0 font-medium" autoFocus>
+                <input v-model="testoRicerca" placeholder="Cerca spese, entrate, categorie, conti..." class="w-full bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl text-zinc-900 dark:text-white pl-12 pr-5 py-4 rounded-2xl border border-white/60 dark:border-zinc-700/50 focus:border-brand-500 dark:focus:border-brand-400 outline-none placeholder-zinc-400 dark:placeholder-zinc-500 shadow-glass dark:shadow-glass-dark transition-all relative z-0 font-medium" autoFocus>
             </div>
         </div>
     </header>
@@ -222,8 +222,8 @@
                         
                         <div class="flex items-center gap-4 relative z-10">
                             <!-- Icon Container -->
-                            <div class="w-14 h-14 rounded-[1.25rem] flex items-center justify-center text-white text-2xl shadow-sm border border-white/20 transform transition-transform group-active:scale-90 relative overflow-hidden"
-                                :style="{ backgroundColor: t.tipo === 'entrata' && t.categoria === 'Entrata' ? '#10B981' : getColorCategoria(t.categoria) }">
+                            <div class="w-14 h-14 rounded-[1.25rem] flex items-center justify-center text-white text-2xl shadow-sm border border-white/20 transform transition-transform group-active:scale-90 relative overflow-hidden shrink-0"
+                                :style="{ backgroundColor: t.tipo === 'entrata' && t.categoria === 'Entrata' ? '#10B981' : (t.tipo === 'giroconto' ? '#8b5cf6' : getColorCategoria(t.categoria)) }">
                                 <div class="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent"></div>
                                 <i v-if="isFaIcon(getIcona(t.categoria))" :class="getIcona(t.categoria) + ' drop-shadow-md relative z-10'"></i>
                                 <span v-else class="text-3xl leading-none pt-1 drop-shadow-md relative z-10">{{ getIcona(t.categoria) }}</span>
@@ -234,26 +234,38 @@
                             </div>
                             
                             <!-- Texts -->
-                            <div>
+                            <div class="overflow-hidden">
                                 <div class="flex items-center gap-2">
-                                    <p class="font-bold text-zinc-900 dark:text-zinc-100 leading-tight text-base tracking-tight">{{ t.descrizione }}</p>
-                                    <div v-if="t.allegato" class="w-5 h-5 rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border border-zinc-200 dark:border-zinc-700">
+                                    <p class="font-bold text-zinc-900 dark:text-zinc-100 leading-tight text-base tracking-tight truncate">{{ t.descrizione }}</p>
+                                    <div v-if="t.allegato" class="w-5 h-5 rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border border-zinc-200 dark:border-zinc-700 shrink-0">
                                         <i class="fa-solid fa-paperclip text-[9px] text-zinc-500"></i>
                                     </div>
                                 </div>
-                                <p class="text-[12px] text-zinc-500 dark:text-zinc-400 mt-1 font-medium tracking-wide flex items-center gap-1.5">
-                                    <span>{{ t.data_short }}</span>
-                                    <span class="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-600"></span>
-                                    <span>{{ t.categoria }}</span>
+                                <p class="text-[12px] text-zinc-500 dark:text-zinc-400 mt-1 font-medium tracking-wide flex items-center gap-1.5 flex-wrap">
+                                    <span class="whitespace-nowrap">{{ t.data_short }}</span>
+                                    <span class="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-600 shrink-0"></span>
+                                    <span v-if="t.tipo !== 'giroconto'" class="truncate max-w-[80px]">{{ t.categoria }}</span>
+                                    <span v-else class="truncate text-brand-500 font-bold">Giroconto</span>
+                                    <span class="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-600 shrink-0"></span>
+                                    <span class="truncate flex items-center gap-1 text-zinc-400 dark:text-zinc-500">
+                                        <template v-if="t.tipo !== 'giroconto'">
+                                            <span v-if="!isFaIcon(getIconaConto(t.conto))" class="text-[10px]">{{ getIconaConto(t.conto) }}</span>
+                                            <i v-else :class="getIconaConto(t.conto)" class="text-[10px]"></i>
+                                            {{ t.conto || 'Principale' }}
+                                        </template>
+                                        <template v-else>
+                                            {{ t.conto }} <i class="fa-solid fa-arrow-right mx-1 text-[8px]"></i> {{ t.conto_dest }}
+                                        </template>
+                                    </span>
                                 </p>
                             </div>
                         </div>
                         
                         <!-- Amount & Actions -->
-                        <div class="flex flex-col items-end relative z-10">
+                        <div class="flex flex-col items-end relative z-10 shrink-0 ml-2">
                             <div class="px-2.5 py-1 rounded-lg flex items-center font-bold font-mono text-base tracking-tight shadow-sm border" 
-                                :class="t.tipo === 'entrata' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/20' : 'bg-zinc-50 dark:bg-zinc-800 text-zinc-800 dark:text-white border-zinc-200 dark:border-zinc-700'">
-                                {{ t.tipo === 'entrata' ? '+' : '-' }}{{ nascondiSaldo ? '•••' : formatValutaNoSymbol(t.importo) }}
+                                :class="t.tipo === 'entrata' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/20' : (t.tipo === 'giroconto' ? 'bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 border-brand-100 dark:border-brand-500/20' : 'bg-zinc-50 dark:bg-zinc-800 text-zinc-800 dark:text-white border-zinc-200 dark:border-zinc-700')">
+                                {{ t.tipo === 'entrata' ? '+' : (t.tipo === 'giroconto' ? '↔' : '-') }}{{ nascondiSaldo ? '•••' : formatValutaNoSymbol(t.importo) }}
                             </div>
                             
                             <button @click.stop="eliminaTransazione(t.id)" class="text-zinc-300 dark:text-zinc-600 text-[12px] mt-2 hover:text-rose-500 dark:hover:text-rose-400 p-2 -mr-2 flex items-center gap-1 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100">
@@ -286,44 +298,106 @@
         <div v-if="mostraMenu || mostraForm || mostraModalConferma || mostraModalPin" class="fixed inset-0 z-[80] bg-zinc-900/60 dark:bg-black/80 backdrop-blur-md pointer-events-auto" @click="chiudiModali"></div>
     </transition>
 
-    <!-- 1) SIDEBAR MENU IMPOSTAZIONI (Da Sinistra) -->
+    <!-- 1) SIDEBAR MENU IMPOSTAZIONI (Da Sinistra - Stile App Nativa) -->
     <transition name="slide-left">
-        <div v-if="mostraMenu" class="fixed inset-y-0 left-0 z-[90] w-[85vw] max-w-[340px] h-full bg-white/95 dark:bg-zinc-900/95 backdrop-blur-3xl shadow-[30px_0_60px_rgba(0,0,0,0.15)] flex flex-col pointer-events-auto border-r border-white/50 dark:border-zinc-700/50 rounded-r-[2rem]">
+        <div v-if="mostraMenu" class="fixed inset-y-0 left-0 z-[90] w-[85vw] max-w-[340px] h-full bg-white/95 dark:bg-zinc-900/95 backdrop-blur-3xl shadow-[30px_0_60px_rgba(0,0,0,0.15)] flex flex-col pointer-events-auto border-r border-white/50 dark:border-zinc-700/50 rounded-r-[2rem] overflow-hidden">
             
-            <div class="p-6 pb-4 flex justify-between items-center border-b border-zinc-200/50 dark:border-zinc-800/50 pt-safe-top">
+            <!-- Header Dinamico -->
+            <div class="p-6 pb-4 flex justify-between items-center border-b border-zinc-200/50 dark:border-zinc-800/50 pt-safe-top bg-white/40 dark:bg-zinc-900/40 backdrop-blur-xl z-20 shrink-0">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-[1rem] bg-gradient-to-br from-brand-400 to-indigo-600 text-white flex items-center justify-center text-lg shadow-lg border border-white/20">
+                    <button v-if="tabMenu !== 'main'" @click="tabMenu = 'main'" class="w-9 h-9 bg-white dark:bg-zinc-800 rounded-full flex items-center justify-center text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors shadow-sm border border-zinc-200/50 dark:border-zinc-700 mr-1 active:scale-95">
+                        <i class="fa-solid fa-chevron-left text-sm"></i>
+                    </button>
+                    <div v-else class="w-10 h-10 rounded-[1rem] bg-gradient-to-br from-brand-400 to-indigo-600 text-white flex items-center justify-center text-lg shadow-lg border border-white/20">
                         <i class="fa-solid fa-wallet drop-shadow-md"></i>
                     </div>
                     <div>
-                        <h2 class="font-black text-xl text-zinc-900 dark:text-white tracking-tight leading-none">Impostazioni</h2>
-                        <span class="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1 block">Gestione App</span>
+                        <h2 class="font-black text-xl text-zinc-900 dark:text-white tracking-tight leading-none">
+                            {{ tabMenu === 'main' ? 'Il Mio Wallet' : (tabMenu === 'analisi' ? 'Analisi' : (tabMenu === 'conti' ? 'I Tuoi Conti' : (tabMenu === 'budget' ? 'Budget' : 'Categorie'))) }}
+                        </h2>
+                        <span v-if="tabMenu === 'main'" class="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1 block">Menu Principale</span>
                     </div>
                 </div>
-                <button @click="mostraMenu = false" class="w-9 h-9 bg-zinc-100/80 dark:bg-zinc-800/80 rounded-full flex items-center justify-center text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors border border-white/50 dark:border-zinc-700">
+                <button @click="mostraMenu = false" class="w-9 h-9 bg-zinc-100/80 dark:bg-zinc-800/80 rounded-full flex items-center justify-center text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors border border-white/50 dark:border-zinc-700 active:scale-95">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
 
-            <!-- Tab Menu -->
-            <div class="px-6 mt-6 mb-2">
-                <div class="flex bg-zinc-100/80 dark:bg-zinc-800/80 p-1.5 rounded-2xl border border-white/60 dark:border-zinc-700/50 shadow-inner relative z-0">
-                    <div class="absolute inset-y-1.5 w-[calc(50%-0.375rem)] bg-white dark:bg-zinc-700 rounded-xl shadow-md transition-all duration-300 border border-zinc-200/50 dark:border-zinc-600/50 -z-10"
-                         :class="tabMenu === 'categorie' ? 'left-[calc(50%+0.1875rem)]' : 'left-1.5'"></div>
-
-                    <button @click="tabMenu = 'analisi'" class="flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2" :class="tabMenu === 'analisi' ? 'text-brand-600 dark:text-white' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'">
-                        <i class="fa-solid fa-chart-pie"></i> Analisi
-                    </button>
-                    <button @click="tabMenu = 'categorie'" class="flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2" :class="tabMenu === 'categorie' ? 'text-brand-600 dark:text-white' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'">
-                        <i class="fa-solid fa-layer-group"></i> Categorie
-                    </button>
-                </div>
-            </div>
-
             <!-- Contenuto scrollabile Sidebar -->
-            <div class="flex-1 overflow-y-auto overflow-x-hidden p-6 scrollbar-hide">
+            <div class="flex-1 overflow-y-auto overflow-x-hidden p-6 scrollbar-hide pb-safe-bottom">
+                
+                <!-- MENU PRINCIPALE (Vista Radice) -->
+                <div v-if="tabMenu === 'main'" class="space-y-8 pb-6">
+                    <!-- Strumenti Principali -->
+                    <div>
+                        <h3 class="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-3 px-2 flex items-center gap-2"><i class="fa-solid fa-layer-group text-brand-500/50"></i> Funzioni</h3>
+                        <div class="bg-white/60 dark:bg-zinc-800/60 rounded-[1.5rem] border border-white/60 dark:border-zinc-700/50 shadow-glass dark:shadow-glass-dark overflow-hidden flex flex-col">
+                            <button @click="tabMenu = 'analisi'" class="w-full p-4 flex items-center gap-4 border-b border-zinc-100 dark:border-zinc-700/50 hover:bg-white/80 dark:hover:bg-zinc-700/50 transition-all active:bg-zinc-100 dark:active:bg-zinc-700 group text-left">
+                                <div class="w-11 h-11 rounded-[1rem] bg-brand-50 dark:bg-brand-500/10 text-brand-500 flex items-center justify-center text-xl group-hover:scale-110 group-hover:bg-brand-100 dark:group-hover:bg-brand-500/20 transition-all shadow-sm"><i class="fa-solid fa-chart-pie"></i></div>
+                                <div class="flex-1"><div class="font-bold text-[15px] text-zinc-800 dark:text-zinc-200">Analisi Spese</div><div class="text-[12px] text-zinc-500 font-medium">Statistiche e trend temporali</div></div>
+                                <i class="fa-solid fa-chevron-right text-zinc-300 dark:text-zinc-600 text-sm"></i>
+                            </button>
+                            <button @click="tabMenu = 'conti'" class="w-full p-4 flex items-center gap-4 border-b border-zinc-100 dark:border-zinc-700/50 hover:bg-white/80 dark:hover:bg-zinc-700/50 transition-all active:bg-zinc-100 dark:active:bg-zinc-700 group text-left">
+                                <div class="w-11 h-11 rounded-[1rem] bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 flex items-center justify-center text-xl group-hover:scale-110 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-500/20 transition-all shadow-sm"><i class="fa-solid fa-building-columns"></i></div>
+                                <div class="flex-1"><div class="font-bold text-[15px] text-zinc-800 dark:text-zinc-200">Gestione Conti</div><div class="text-[12px] text-zinc-500 font-medium">Saldi bancari e contanti</div></div>
+                                <i class="fa-solid fa-chevron-right text-zinc-300 dark:text-zinc-600 text-sm"></i>
+                            </button>
+                            <button @click="tabMenu = 'budget'" class="w-full p-4 flex items-center gap-4 border-b border-zinc-100 dark:border-zinc-700/50 hover:bg-white/80 dark:hover:bg-zinc-700/50 transition-all active:bg-zinc-100 dark:active:bg-zinc-700 group text-left">
+                                <div class="w-11 h-11 rounded-[1rem] bg-orange-50 dark:bg-orange-500/10 text-orange-500 flex items-center justify-center text-xl group-hover:scale-110 group-hover:bg-orange-100 dark:group-hover:bg-orange-500/20 transition-all shadow-sm"><i class="fa-solid fa-bullseye"></i></div>
+                                <div class="flex-1"><div class="font-bold text-[15px] text-zinc-800 dark:text-zinc-200">Budget Mensili</div><div class="text-[12px] text-zinc-500 font-medium">Imposta limiti di spesa</div></div>
+                                <i class="fa-solid fa-chevron-right text-zinc-300 dark:text-zinc-600 text-sm"></i>
+                            </button>
+                            <button @click="tabMenu = 'categorie'" class="w-full p-4 flex items-center gap-4 hover:bg-white/80 dark:hover:bg-zinc-700/50 transition-all active:bg-zinc-100 dark:active:bg-zinc-700 group text-left">
+                                <div class="w-11 h-11 rounded-[1rem] bg-rose-50 dark:bg-rose-500/10 text-rose-500 flex items-center justify-center text-xl group-hover:scale-110 group-hover:bg-rose-100 dark:group-hover:bg-rose-500/20 transition-all shadow-sm"><i class="fa-solid fa-layer-group"></i></div>
+                                <div class="flex-1"><div class="font-bold text-[15px] text-zinc-800 dark:text-zinc-200">Categorie</div><div class="text-[12px] text-zinc-500 font-medium">Personalizza icone e nomi</div></div>
+                                <i class="fa-solid fa-chevron-right text-zinc-300 dark:text-zinc-600 text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Sicurezza & Dati -->
+                    <div>
+                        <h3 class="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-3 px-2 flex items-center gap-2"><i class="fa-solid fa-shield-halved text-zinc-400"></i> Sicurezza & Dati</h3>
+                        <div class="bg-white/60 dark:bg-zinc-800/60 rounded-[1.5rem] border border-white/60 dark:border-zinc-700/50 shadow-glass dark:shadow-glass-dark overflow-hidden flex flex-col">
+                            <button @click="gestisciPin" class="w-full p-4 flex items-center gap-4 border-b border-zinc-100 dark:border-zinc-700/50 hover:bg-white/80 dark:hover:bg-zinc-700/50 transition-all active:bg-zinc-100 dark:active:bg-zinc-700 group text-left">
+                                <div class="w-11 h-11 rounded-[1rem] flex items-center justify-center text-xl group-hover:scale-110 transition-all shadow-sm border border-zinc-200/50 dark:border-zinc-600" :class="haPin ? 'bg-brand-500 text-white border-brand-500' : 'bg-zinc-100 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-300'"><i class="fa-solid" :class="haPin ? 'fa-lock' : 'fa-lock-open'"></i></div>
+                                <div class="flex-1"><div class="font-bold text-[15px] text-zinc-800 dark:text-zinc-200">Codice PIN</div><div class="text-[12px] text-zinc-500 font-medium" :class="haPin ? 'text-brand-500 dark:text-brand-400' : ''">{{ haPin ? 'PIN Attivo. Tocca per opzioni' : 'Proteggi l\'app con una password' }}</div></div>
+                                <i class="fa-solid fa-chevron-right text-zinc-300 dark:text-zinc-600 text-sm"></i>
+                            </button>
+                            <button @click="esportaCSV" class="w-full p-4 flex items-center gap-4 border-b border-zinc-100 dark:border-zinc-700/50 hover:bg-white/80 dark:hover:bg-zinc-700/50 transition-all active:bg-zinc-100 dark:active:bg-zinc-700 group text-left">
+                                <div class="w-11 h-11 rounded-[1rem] bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-xl group-hover:scale-110 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-500/20 transition-all shadow-sm"><i class="fa-solid fa-file-csv"></i></div>
+                                <div class="flex-1"><div class="font-bold text-[15px] text-zinc-800 dark:text-zinc-200">Esporta Dati</div><div class="text-[12px] text-zinc-500 font-medium">Scarica foglio CSV</div></div>
+                                <i class="fa-solid fa-download text-zinc-300 dark:text-zinc-600 text-sm"></i>
+                            </button>
+                            <div class="w-full p-4 flex items-center justify-between gap-4 hover:bg-white/80 dark:hover:bg-zinc-700/50 transition-colors cursor-pointer" @click="toggleDarkMode">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-11 h-11 rounded-[1rem] bg-zinc-800 dark:bg-zinc-100 text-amber-400 dark:text-zinc-800 flex items-center justify-center text-xl shadow-sm"><i class="fa-solid" :class="darkMode ? 'fa-moon' : 'fa-sun'"></i></div>
+                                    <div class="text-left"><div class="font-bold text-[15px] text-zinc-800 dark:text-zinc-200">Tema Scuro</div><div class="text-[12px] text-zinc-500 font-medium">Cambia aspetto</div></div>
+                                </div>
+                                <button class="w-14 h-7 rounded-full relative transition-all duration-300 shadow-inner border border-zinc-200 dark:border-zinc-700" :class="darkMode ? 'bg-brand-500 border-brand-500' : 'bg-zinc-200 dark:bg-zinc-700'">
+                                    <div class="w-5 h-5 bg-white rounded-full absolute top-[3px] transition-all shadow-sm" :class="darkMode ? 'left-[30px]' : 'left-[4px]'"></div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="pt-2 flex justify-center items-center gap-2 text-[10px] text-zinc-400 font-bold tracking-widest">
+                         <span>ULTIMATE V5.0</span>
+                         <span v-if="firebaseAttivo" class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" title="Cloud Attivo"></span>
+                         <span v-else class="w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-600" title="Offline"></span>
+                    </div>
+                </div>
+
                 <!-- TAB ANALISI -->
                 <div v-if="tabMenu === 'analisi'" class="space-y-6">
+                    <!-- Filtri Temporali Avanzati -->
+                    <div class="flex gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-2 px-2 snap-x">
+                        <button @click="filtroTempo = 'mese_corrente'" class="px-4 py-2 rounded-xl text-xs font-bold transition-all border shadow-sm snap-center whitespace-nowrap shrink-0" :class="filtroTempo === 'mese_corrente' ? 'bg-brand-500 text-white border-brand-500' : 'bg-white/80 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-300 border-zinc-200/50 dark:border-zinc-700'">Mese Corrente</button>
+                        <button @click="filtroTempo = 'mese_scorso'" class="px-4 py-2 rounded-xl text-xs font-bold transition-all border shadow-sm snap-center whitespace-nowrap shrink-0" :class="filtroTempo === 'mese_scorso' ? 'bg-brand-500 text-white border-brand-500' : 'bg-white/80 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-300 border-zinc-200/50 dark:border-zinc-700'">Mese Scorso</button>
+                        <button @click="filtroTempo = 'anno_corrente'" class="px-4 py-2 rounded-xl text-xs font-bold transition-all border shadow-sm snap-center whitespace-nowrap shrink-0" :class="filtroTempo === 'anno_corrente' ? 'bg-brand-500 text-white border-brand-500' : 'bg-white/80 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-300 border-zinc-200/50 dark:border-zinc-700'">Anno</button>
+                        <button @click="filtroTempo = 'tutto'" class="px-4 py-2 rounded-xl text-xs font-bold transition-all border shadow-sm snap-center whitespace-nowrap shrink-0" :class="filtroTempo === 'tutto' ? 'bg-brand-500 text-white border-brand-500' : 'bg-white/80 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-300 border-zinc-200/50 dark:border-zinc-700'">Sempre</button>
+                    </div>
+
                     <div class="flex justify-center mb-2">
                         <div class="bg-zinc-100/80 dark:bg-zinc-800/80 p-1.5 rounded-2xl flex text-xs font-bold w-full border border-white/60 dark:border-zinc-700/50 shadow-inner relative z-0">
                             <div class="absolute inset-y-1.5 w-[calc(33.333%-0.25rem)] bg-white dark:bg-zinc-700 rounded-xl shadow-md transition-all duration-300 border border-zinc-200/50 dark:border-zinc-600/50 -z-10"
@@ -368,7 +442,7 @@
 
                     <div v-else class="bg-white/50 dark:bg-zinc-900/50 rounded-[2rem] border border-white/60 dark:border-zinc-700/50 p-6 shadow-glass dark:shadow-glass-dark">
                         <h3 class="text-[11px] font-bold text-zinc-500 uppercase tracking-widest mb-8 text-center flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-chart-line text-brand-500"></i> Ultimi 30 Giorni
+                            <i class="fa-solid fa-chart-line text-brand-500"></i> Ultimi 30 Giorni (Uscite)
                         </h3>
                         <div class="h-48 flex items-end justify-between gap-1 relative pt-4">
                              <svg class="absolute inset-0 w-full h-full" preserveAspectRatio="none">
@@ -393,10 +467,40 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- TAB CONTI -->
+                <div v-if="tabMenu === 'conti'" class="space-y-6 pb-6">
+                    <div>
+                        <div class="bg-white/60 dark:bg-zinc-800/60 p-4 rounded-[1.5rem] border border-white/60 dark:border-zinc-700/50 shadow-glass dark:shadow-glass-dark mb-4 mt-2">
+                            <div class="flex gap-3 mb-4">
+                                <input v-model="nuovoContoIcona" placeholder="🏦" class="w-14 h-12 text-center text-xl border border-zinc-200/50 dark:border-zinc-600 rounded-2xl outline-none bg-zinc-50/50 dark:bg-zinc-900/50 dark:text-white shadow-inner focus:border-brand-500 transition-colors" maxlength="2">
+                                <input v-model="nuovoContoNome" placeholder="Nome conto..." class="flex-1 h-12 px-4 text-sm border border-zinc-200/50 dark:border-zinc-600 rounded-2xl outline-none bg-zinc-50/50 dark:bg-zinc-900/50 dark:text-white shadow-inner focus:border-brand-500 transition-colors font-bold">
+                            </div>
+                            <button @click="creaConto" class="w-full py-3 bg-zinc-900 dark:bg-brand-600 text-white text-xs font-bold rounded-xl shadow-lg hover:bg-zinc-800 dark:hover:bg-brand-500 active:scale-95 transition-all">Aggiungi Nuovo Conto</button>
+                        </div>
+                         
+                        <div class="space-y-2">
+                            <div v-for="conto in conti" :key="'c-'+conto.nome" class="flex justify-between items-center bg-white/50 dark:bg-zinc-800/50 p-3 rounded-2xl border border-white/60 dark:border-zinc-700/50 shadow-sm group hover:bg-white/80 dark:hover:bg-zinc-800/80 transition-all">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-700 dark:to-zinc-800 flex items-center justify-center text-xl border border-white/50 dark:border-zinc-600 shadow-sm">
+                                        <span v-if="!isFaIcon(conto.icona)" class="drop-shadow-sm">{{ conto.icona }}</span>
+                                        <i v-else :class="conto.icona" class="text-zinc-500 dark:text-zinc-300"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-bold text-sm text-zinc-800 dark:text-zinc-200 leading-tight">{{ conto.nome }}</div>
+                                        <div class="text-[11px] font-mono text-zinc-500 font-bold" :class="saldiPerConto[conto.nome] >= 0 ? 'text-emerald-500' : 'text-rose-500'">
+                                            {{ nascondiSaldo ? '••••' : formatValuta(saldiPerConto[conto.nome] || 0) }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <button @click="eliminaConto(conto.nome)" class="text-zinc-300 hover:text-rose-500 w-8 h-8 flex items-center justify-center rounded-full hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors opacity-50 group-hover:opacity-100"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 
                 <!-- TAB CATEGORIE -->
-                 <div v-if="tabMenu === 'categorie'" class="space-y-6 pb-6">
-                    
+                 <div v-if="tabMenu === 'categorie'" class="space-y-6 pb-6 mt-2">
                     <!-- SEZIONE USCITE -->
                     <div>
                         <h3 class="text-xs font-bold text-rose-500 uppercase tracking-widest mb-3 flex items-center gap-2"><i class="fa-solid fa-arrow-down"></i> Categorie Uscite</h3>
@@ -448,31 +552,57 @@
                             </div>
                         </div>
                     </div>
-                    
                 </div>
-            </div>
 
-            <!-- Footer Sidebar -->
-            <div class="p-6 border-t border-zinc-200/50 dark:border-zinc-800 bg-white/40 dark:bg-zinc-900/40 pb-safe-bottom">
-                <div class="grid grid-cols-2 gap-3 mb-5">
-                    <button @click="esportaCSV" class="py-3.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center justify-center gap-2 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors backdrop-blur-sm shadow-sm">
-                        <i class="fa-solid fa-file-csv text-sm"></i> Export
-                    </button>
-                    <!-- Bottone gestione PIN -->
-                    <button @click="gestisciPin" class="py-3.5 rounded-2xl bg-zinc-100/80 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 text-xs font-bold flex items-center justify-center gap-2 border border-zinc-200/50 dark:border-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors backdrop-blur-sm shadow-sm">
-                        <i class="fa-solid text-sm" :class="haPin ? 'fa-lock text-brand-500' : 'fa-lock-open'"></i> {{ haPin ? 'Opzioni PIN' : 'Set PIN' }}
-                    </button>
-                </div>
-                <div class="flex items-center justify-between px-2 bg-zinc-100/50 dark:bg-zinc-800/50 p-2 rounded-2xl border border-white/50 dark:border-zinc-700">
-                    <div class="text-[10px] text-zinc-500 font-bold tracking-widest flex items-center gap-2 pl-2">
-                         <span>ULTIMATE V3.0</span>
-                         <span v-if="firebaseAttivo" class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" title="Cloud Attivo"></span>
-                         <span v-else class="w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-600" title="Offline"></span>
+                <!-- TAB BUDGET -->
+                <div v-if="tabMenu === 'budget'" class="space-y-6 pb-6 mt-2">
+                    <div>
+                        <p class="text-[12px] text-zinc-500 dark:text-zinc-400 mb-4 leading-tight text-center">Il progresso calcola in automatico le uscite effettuate nel <b>mese corrente</b>.</p>
+                        
+                        <div class="bg-white/60 dark:bg-zinc-800/60 p-4 rounded-[1.5rem] border border-white/60 dark:border-zinc-700/50 shadow-glass dark:shadow-glass-dark mb-6">
+                            <div class="flex gap-3 mb-4">
+                                <select v-model="nuovoBudgetCat" class="w-1/2 h-12 px-3 text-sm border border-zinc-200/50 dark:border-zinc-600 rounded-2xl outline-none bg-zinc-50/50 dark:bg-zinc-900/50 dark:text-white shadow-inner focus:border-brand-500 transition-colors font-bold appearance-none">
+                                    <option value="" disabled selected>Categoria...</option>
+                                    <option v-for="cat in categorieUscite" :key="cat.nome" :value="cat.nome">{{ cat.nome }}</option>
+                                </select>
+                                <div class="relative w-1/2">
+                                    <input type="number" step="1" v-model.number="nuovoBudgetLimite" placeholder="Limite..." class="w-full h-12 px-4 pr-8 text-sm border border-zinc-200/50 dark:border-zinc-600 rounded-2xl outline-none bg-zinc-50/50 dark:bg-zinc-900/50 dark:text-white shadow-inner focus:border-brand-500 transition-colors font-bold">
+                                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 font-bold">€</span>
+                                </div>
+                            </div>
+                            <button @click="creaBudget" class="w-full py-3 bg-zinc-900 dark:bg-brand-600 text-white text-xs font-bold rounded-xl shadow-lg hover:bg-zinc-800 dark:hover:bg-brand-500 active:scale-95 transition-all">Imposta Limite</button>
+                        </div>
+                         
+                        <div class="space-y-4">
+                            <div v-for="b in budgetCalcolati" :key="b.categoria" class="bg-white/50 dark:bg-zinc-800/50 p-4 rounded-2xl border border-white/60 dark:border-zinc-700/50 shadow-sm relative overflow-hidden group">
+                                <div class="flex justify-between items-end mb-2">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm shadow-sm" :style="{ backgroundColor: b.colore }">
+                                            <span v-if="!isFaIcon(b.icona)">{{ b.icona }}</span>
+                                            <i v-else :class="b.icona"></i>
+                                        </div>
+                                        <span class="font-bold text-sm text-zinc-800 dark:text-zinc-200">{{ b.categoria }}</span>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-sm font-black font-mono tracking-tight" :class="b.sforato ? 'text-rose-500' : 'text-zinc-800 dark:text-zinc-200'">{{ formatValutaNoSymbol(b.speso) }}€</span>
+                                        <span class="text-[10px] text-zinc-400 font-bold font-mono"> / {{ b.limite }}€</span>
+                                    </div>
+                                </div>
+                                <div class="w-full h-2.5 bg-zinc-200/50 dark:bg-zinc-700 rounded-full overflow-hidden shadow-inner mt-3 border border-black/5 dark:border-white/5">
+                                    <div class="h-full rounded-full transition-all duration-500" :style="{ width: b.percentuale + '%', backgroundColor: b.sforato ? '#f43f5e' : b.colore }"></div>
+                                </div>
+                                <p v-if="b.sforato" class="text-[10px] text-rose-500 font-bold mt-2 animate-pulse flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> Hai superato il limite impostato!</p>
+                                
+                                <button @click="eliminaBudget(b.categoria)" class="absolute top-2 right-2 text-zinc-300 hover:text-rose-500 w-6 h-6 flex items-center justify-center rounded-full hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors opacity-0 md:opacity-0 group-hover:opacity-100"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                            </div>
+                            <div v-if="budgetCalcolati.length === 0" class="text-center py-6 text-zinc-400">
+                                <i class="fa-solid fa-bullseye text-3xl mb-2 opacity-20"></i>
+                                <p class="text-xs font-semibold">Nessun budget impostato.</p>
+                            </div>
+                        </div>
                     </div>
-                    <button @click="toggleDarkMode" class="w-10 h-10 rounded-xl bg-white dark:bg-zinc-700 flex items-center justify-center text-zinc-600 dark:text-amber-400 hover:bg-zinc-50 dark:hover:bg-zinc-600 transition-colors shadow-sm border border-zinc-100 dark:border-zinc-600">
-                        <i class="fa-solid" :class="darkMode ? 'fa-sun' : 'fa-moon'"></i>
-                    </button>
                 </div>
+
             </div>
         </div>
     </transition>
@@ -492,17 +622,22 @@
                     <div class="w-16 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full shadow-inner pointer-events-none"></div>
                 </div>
                 
-                <!-- Area Scrollabile Form (con padding in fondo per il tasto) -->
+                <!-- Area Scrollabile Form -->
                 <div class="overflow-y-auto overflow-x-hidden scrollbar-hide flex-1 w-full px-6 pb-[120px]">
                     <form @submit.prevent="salvaTransazione" class="w-full flex flex-col space-y-6">
                         
-                        <!-- Toggle Entrata/Uscita -->
+                        <!-- Toggle Entrata/Uscita/Giroconto -->
                         <div class="flex bg-zinc-100/80 dark:bg-zinc-800/80 p-1.5 rounded-2xl border border-white/60 dark:border-zinc-700/50 shadow-inner w-full relative z-0">
-                            <div class="absolute inset-y-1.5 w-[calc(50%-0.375rem)] bg-white dark:bg-zinc-700 rounded-xl shadow-md transition-all duration-300 border border-zinc-200/50 dark:border-zinc-600/50 -z-10"
-                                 :class="nuova.tipo === 'entrata' ? 'left-[calc(50%+0.1875rem)]' : 'left-1.5'"></div>
+                            <div class="absolute inset-y-1.5 w-[calc(33.33%-0.375rem)] bg-white dark:bg-zinc-700 rounded-xl shadow-md transition-all duration-300 border border-zinc-200/50 dark:border-zinc-600/50 -z-10"
+                                 :class="{
+                                     'left-1.5': nuova.tipo === 'uscita',
+                                     'left-[calc(33.33%+0.1875rem)]': nuova.tipo === 'entrata',
+                                     'left-[calc(66.66%-0.1875rem)]': nuova.tipo === 'giroconto'
+                                 }"></div>
                             
-                            <button type="button" @click="cambiaTipo('uscita')" class="flex-1 py-3.5 font-bold text-sm transition-colors" :class="nuova.tipo === 'uscita' ? 'text-rose-500' : 'text-zinc-500'">USCITA</button>
-                            <button type="button" @click="cambiaTipo('entrata')" class="flex-1 py-3.5 font-bold text-sm transition-colors" :class="nuova.tipo === 'entrata' ? 'text-emerald-500' : 'text-zinc-500'">ENTRATA</button>
+                            <button type="button" @click="cambiaTipo('uscita')" class="flex-1 py-3.5 font-bold text-xs transition-colors" :class="nuova.tipo === 'uscita' ? 'text-rose-500' : 'text-zinc-500'">USCITA</button>
+                            <button type="button" @click="cambiaTipo('entrata')" class="flex-1 py-3.5 font-bold text-xs transition-colors" :class="nuova.tipo === 'entrata' ? 'text-emerald-500' : 'text-zinc-500'">ENTRATA</button>
+                            <button type="button" @click="cambiaTipo('giroconto')" class="flex-1 py-3.5 font-bold text-xs transition-colors" :class="nuova.tipo === 'giroconto' ? 'text-brand-500' : 'text-zinc-500'">TRASFERISCI</button>
                         </div>
 
                         <!-- Importo Input -->
@@ -518,7 +653,7 @@
                         <div class="space-y-4 w-full">
                             <div class="relative group w-full">
                                 <div class="absolute inset-0 bg-brand-500/10 rounded-2xl blur-md opacity-0 group-focus-within:opacity-100 transition-opacity"></div>
-                                <input type="text" v-model="nuova.descrizione" :placeholder="nuova.tipo === 'entrata' ? 'Descrizione entrata...' : 'A cosa servono questi soldi?'" class="w-full min-w-0 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200/50 dark:border-zinc-700 text-zinc-800 dark:text-white rounded-2xl p-5 pr-14 text-base font-bold focus:border-brand-500 outline-none transition-all placeholder-zinc-400 shadow-sm relative z-10">
+                                <input type="text" v-model="nuova.descrizione" :placeholder="nuova.tipo === 'entrata' ? 'Descrizione entrata...' : (nuova.tipo === 'giroconto' ? 'Causale trasferimento...' : 'A cosa servono questi soldi?')" class="w-full min-w-0 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200/50 dark:border-zinc-700 text-zinc-800 dark:text-white rounded-2xl p-5 pr-14 text-base font-bold focus:border-brand-500 outline-none transition-all placeholder-zinc-400 shadow-sm relative z-10">
                                 <button type="button" @click="avviaDettatura" class="absolute right-5 top-1/2 transform -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center transition-colors z-20" :class="stoAscoltando ? 'bg-rose-100 text-rose-500 animate-pulse' : 'bg-zinc-100 dark:bg-zinc-700 text-zinc-400 hover:text-brand-500'">
                                     <i class="fa-solid fa-microphone text-sm"></i>
                                 </button>
@@ -529,6 +664,47 @@
                                 <div class="absolute left-5 top-1/2 transform -translate-y-1/2 text-zinc-400 pointer-events-none z-20"><i class="fa-regular fa-calendar text-lg"></i></div>
                                 <input type="date" v-model="nuova.data" class="w-full block min-w-0 appearance-none bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200/50 dark:border-zinc-700 text-zinc-800 dark:text-white rounded-2xl p-5 pl-14 text-base font-bold outline-none focus:border-brand-500 transition-all text-zinc-600 dark:text-zinc-300 shadow-sm relative z-10">
                             </div>
+                        </div>
+
+                        <!-- Selezione CONTO (Singolo o Doppio per Giroconto) -->
+                        <div class="w-full mt-2" v-if="conti.length > 0">
+                            <template v-if="nuova.tipo !== 'giroconto'">
+                                <label class="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest pl-2">Scegli Conto</label>
+                                <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide px-1">
+                                    <button type="button" v-for="c in conti" :key="c.nome" @click="nuova.conto = c.nome" 
+                                            class="px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 whitespace-nowrap transition-all border shadow-sm"
+                                            :class="nuova.conto === c.nome ? 'bg-zinc-800 dark:bg-zinc-100 text-white dark:text-zinc-900 border-zinc-800 dark:border-zinc-100' : 'bg-white/80 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-300 border-zinc-200/50 dark:border-zinc-700'">
+                                        <span v-if="!isFaIcon(c.icona)">{{ c.icona }}</span>
+                                        <i v-else :class="c.icona" class="opacity-80"></i>
+                                        {{ c.nome }}
+                                    </button>
+                                </div>
+                            </template>
+                            <template v-else>
+                                <div class="flex gap-4">
+                                    <div class="flex-1">
+                                        <label class="text-[10px] font-bold text-rose-500 mb-2 block uppercase tracking-widest pl-2">Da Conto</label>
+                                        <div class="relative">
+                                            <select v-model="nuova.conto" class="w-full h-12 px-3 text-sm border border-zinc-200/50 dark:border-zinc-600 rounded-xl outline-none bg-white/80 dark:bg-zinc-800/80 dark:text-white shadow-sm focus:border-brand-500 transition-colors font-bold appearance-none">
+                                                <option v-for="c in conti" :key="c.nome" :value="c.nome">{{ c.nome }}</option>
+                                            </select>
+                                            <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-400 pointer-events-none"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center justify-center pt-6 text-zinc-400">
+                                        <i class="fa-solid fa-arrow-right-long"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <label class="text-[10px] font-bold text-emerald-500 mb-2 block uppercase tracking-widest pl-2">A Conto</label>
+                                        <div class="relative">
+                                            <select v-model="nuova.conto_dest" class="w-full h-12 px-3 text-sm border border-zinc-200/50 dark:border-zinc-600 rounded-xl outline-none bg-white/80 dark:bg-zinc-800/80 dark:text-white shadow-sm focus:border-brand-500 transition-colors font-bold appearance-none">
+                                                <option v-for="c in conti" :key="c.nome" :value="c.nome">{{ c.nome }}</option>
+                                            </select>
+                                            <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-400 pointer-events-none"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
                         
                         <!-- Opzioni Extra: Per Entrate e Uscite -->
@@ -550,8 +726,8 @@
                             </div>
                         </div>
 
-                        <!-- Categorie: Per TUTTI i tipi (Entrate e Uscite) dinamiche -->
-                        <div class="bg-zinc-50/50 dark:bg-zinc-800/30 p-4 rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-inner w-full mt-4">
+                        <!-- Categorie: Per TUTTI i tipi TRANNE Giroconto -->
+                        <div v-if="nuova.tipo !== 'giroconto'" class="bg-zinc-50/50 dark:bg-zinc-800/30 p-4 rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-inner w-full mt-4">
                             <label class="text-[10px] font-bold text-zinc-400 mb-4 block uppercase tracking-widest pl-2">Scegli Categoria</label>
                             <div class="flex gap-4 overflow-x-auto pb-2 scrollbar-hide px-2 snap-x">
                                 <div v-for="cat in categorieFormAttivo" :key="cat.nome" @click="nuova.categoria = cat.nome" class="flex flex-col items-center gap-2 cursor-pointer min-w-[70px] shrink-0 snap-center group">
@@ -629,7 +805,7 @@
         data() {
             return {
                 mostraMenu: false,
-                tabMenu: 'analisi',
+                tabMenu: 'main',
                 vistaGrafico: 'uscita',
                 mostraForm: false,
                 mostraRicerca: false,
@@ -652,14 +828,27 @@
 
                 idModifica: null,
                 idDaEliminare: null,
+                
                 nuovaCatNomeUscita: '', nuovaCatIconaUscita: '',
                 nuovaCatNomeEntrata: '', nuovaCatIconaEntrata: '',
+                nuovoContoNome: '', nuovoContoIcona: '',
+                
+                filtroTempo: 'mese_corrente', // Default per statistiche
+                budgets: [],
+                nuovoBudgetCat: '', nuovoBudgetLimite: '',
+
+                conti: [
+                    { nome: 'Principale', icona: '🏦' },
+                    { nome: 'Contanti', icona: '💶' }
+                ],
+                
                 categorie: [
                     { nome: 'Casa', icona: '🏠', tipo: 'uscita' }, { nome: 'Cibo', icona: '🍔', tipo: 'uscita' }, { nome: 'Auto', icona: '🚗', tipo: 'uscita' },
                     { nome: 'Shopping', icona: '🛍️', tipo: 'uscita' }, { nome: 'Svago', icona: '🎮', tipo: 'uscita' }, { nome: 'Salute', icona: '💊', tipo: 'uscita' },
                     { nome: 'Stipendio', icona: '💰', tipo: 'entrata' }, { nome: 'Regalo', icona: '🎁', tipo: 'entrata' }, { nome: 'Rimborsi', icona: '💶', tipo: 'entrata' }
                 ],
-                nuova: { tipo: 'uscita', importo: '', descrizione: '', categoria: 'Cibo', data: '', ricorrente: false, allegato: null },
+                
+                nuova: { tipo: 'uscita', importo: '', descrizione: '', categoria: 'Cibo', conto: 'Principale', conto_dest: '', data: '', ricorrente: false, allegato: null },
                 transazioni: [],
                 paletteColori: ['#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b', '#10b981', '#0ea5e9', '#6366f1', '#14b8a6', '#f97316'],
                 
@@ -674,17 +863,56 @@
                 const search = this.testoRicerca.toLowerCase();
                 return this.transazioni.filter(t => 
                     t.descrizione.toLowerCase().includes(search) || 
-                    t.categoria.toLowerCase().includes(search) ||
+                    (t.categoria && t.categoria.toLowerCase().includes(search)) ||
+                    (t.conto && t.conto.toLowerCase().includes(search)) ||
+                    (t.conto_dest && t.conto_dest.toLowerCase().includes(search)) ||
                     t.importo.toString().includes(search)
                 );
             },
-            saldoTotale() { return this.transazioni.reduce((acc, t) => t.tipo === 'entrata' ? acc + t.importo : acc - t.importo, 0); },
+            transazioniFiltrateTempo() {
+                if (this.filtroTempo === 'tutto') return this.transazioniFiltrate;
+                const oggi = new Date();
+                return this.transazioniFiltrate.filter(t => {
+                    const d = new Date(t.data);
+                    if (this.filtroTempo === 'mese_corrente') {
+                        return d.getMonth() === oggi.getMonth() && d.getFullYear() === oggi.getFullYear();
+                    } else if (this.filtroTempo === 'mese_scorso') {
+                        const scorso = new Date(oggi.getFullYear(), oggi.getMonth() - 1, 1);
+                        return d.getMonth() === scorso.getMonth() && d.getFullYear() === scorso.getFullYear();
+                    } else if (this.filtroTempo === 'anno_corrente') {
+                        return d.getFullYear() === oggi.getFullYear();
+                    }
+                    return true;
+                });
+            },
+            saldoTotale() { return this.transazioni.filter(t => t.tipo !== 'giroconto').reduce((acc, t) => t.tipo === 'entrata' ? acc + t.importo : acc - t.importo, 0); },
             totaleEntrate() { return this.transazioni.filter(t => t.tipo === 'entrata').reduce((acc, t) => acc + t.importo, 0); },
             totaleUscite() { return this.transazioni.filter(t => t.tipo === 'uscita').reduce((acc, t) => acc + t.importo, 0); },
             
+            saldiPerConto() {
+                const saldi = {};
+                this.conti.forEach(c => saldi[c.nome] = 0);
+                
+                this.transazioni.forEach(t => {
+                    if (t.tipo === 'giroconto') {
+                        if (saldi[t.conto] !== undefined) saldi[t.conto] -= t.importo;
+                        if (saldi[t.conto_dest] !== undefined) saldi[t.conto_dest] += t.importo;
+                    } else {
+                        const contoTx = t.conto || 'Principale';
+                        if (saldi[contoTx] === undefined) saldi[contoTx] = 0;
+                        if (t.tipo === 'entrata') {
+                            saldi[contoTx] += t.importo;
+                        } else {
+                            saldi[contoTx] -= t.importo;
+                        }
+                    }
+                });
+                return saldi;
+            },
+
             totaleVisualizzato() {
                 if (this.vistaGrafico === 'trend') return 0;
-                return this.transazioni.filter(t => t.tipo === this.vistaGrafico).reduce((acc, t) => acc + t.importo, 0);
+                return this.transazioniFiltrateTempo.filter(t => t.tipo === this.vistaGrafico).reduce((acc, t) => acc + t.importo, 0);
             },
             
             datiTrend() {
@@ -726,7 +954,7 @@
                 return gruppi;
             },
             statisticheCategorie() {
-                const filtrate = this.transazioni.filter(t => t.tipo === this.vistaGrafico);
+                const filtrate = this.transazioniFiltrateTempo.filter(t => t.tipo === this.vistaGrafico);
                 if (filtrate.length === 0) return [];
                 const tot = filtrate.reduce((acc, t) => acc + t.importo, 0);
                 const stats = {};
@@ -745,12 +973,34 @@
             categorieFormAttivo() {
                 return this.categorie.filter(c => c.tipo === this.nuova.tipo);
             },
+            budgetCalcolati() {
+                const oggi = new Date();
+                const usciteMese = this.transazioni.filter(t => {
+                    if (t.tipo !== 'uscita') return false;
+                    const d = new Date(t.data);
+                    return d.getMonth() === oggi.getMonth() && d.getFullYear() === oggi.getFullYear();
+                });
+
+                return this.budgets.map(b => {
+                    const speso = usciteMese.filter(t => t.categoria === b.categoria).reduce((acc, t) => acc + t.importo, 0);
+                    let percentuale = (speso / b.limite) * 100;
+                    if (percentuale > 100) percentuale = 100;
+                    
+                    return {
+                        ...b,
+                        speso: speso,
+                        percentuale: percentuale,
+                        sforato: speso > b.limite,
+                        colore: this.getColorCategoria(b.categoria),
+                        icona: this.getIcona(b.categoria)
+                    };
+                });
+            },
             sheetStyle() {
                 if (!this.isDraggingSheet) {
                     return { transform: 'translateY(0)', transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)' };
                 }
                 const delta = this.touchCurrentY - this.touchStartY;
-                // Effetto "elastico" (rubber-banding) se l'utente prova a trascinare verso l'alto
                 const translateY = delta < 0 ? delta * 0.15 : delta;
                 return { 
                     transform: `translateY(${translateY}px)`, 
@@ -782,7 +1032,7 @@
             startDrag(e) {
                 let el = e.target;
                 while (el && el !== e.currentTarget) {
-                    if (el.scrollTop > 0) return; // Permette lo scroll nativo se non siamo in cima
+                    if (el.scrollTop > 0) return;
                     el = el.parentElement;
                 }
                 this.touchStartY = e.touches[0].clientY;
@@ -797,9 +1047,14 @@
                 if (!this.isDraggingSheet) return;
                 this.isDraggingSheet = false;
                 const delta = this.touchCurrentY - this.touchStartY;
-                if (delta > 100) { // Se trascinato giù di almeno 100px, chiudi il modale
+                if (delta > 100) { 
                     this.chiudiModali();
                 }
+            },
+
+            apriMenu() {
+                this.mostraMenu = true;
+                this.tabMenu = 'main'; // Si assicura che aprendo si veda il menù radice
             },
 
             chiudiModali() {
@@ -811,23 +1066,31 @@
 
             apriFormNuovaSpesa() {
                 this.idModifica = null; this.mostraForm = true;
-                this.nuova = { tipo: 'uscita', importo: '', descrizione: '', categoria: 'Cibo', data: new Date().toISOString().split('T')[0], ricorrente: false, allegato: null };
+                const defConto = this.conti.length > 0 ? this.conti[0].nome : 'Principale';
+                const defContoDest = this.conti.length > 1 ? this.conti[1].nome : defConto;
+                this.nuova = { tipo: 'uscita', importo: '', descrizione: '', categoria: 'Cibo', conto: defConto, conto_dest: defContoDest, data: new Date().toISOString().split('T')[0], ricorrente: false, allegato: null };
             },
             apriModifica(transazione) {
                 this.idModifica = transazione.id; this.mostraForm = true;
                 this.nuova = JSON.parse(JSON.stringify(transazione));
+                if (!this.nuova.conto) this.nuova.conto = 'Principale';
+                if (!this.nuova.conto_dest && this.conti.length > 0) this.nuova.conto_dest = this.conti[0].nome;
             },
             chiudiForm() { this.mostraForm = false; this.idModifica = null; },
 
-            // Funzione intelligente per il cambio tipo: Entrata/Uscita
             cambiaTipo(nuovoTipo) {
                 this.nuova.tipo = nuovoTipo;
-                // Imposta in automatico la prima categoria disponibile della nuova lista
-                const catDisponibili = this.categorie.filter(c => c.tipo === nuovoTipo);
-                if (catDisponibili.length > 0) {
-                    this.nuova.categoria = catDisponibili[0].nome;
+                if (nuovoTipo === 'giroconto') {
+                    this.nuova.categoria = 'Giroconto';
+                    this.nuova.descrizione = 'Trasferimento fondi';
                 } else {
-                    this.nuova.categoria = '';
+                    const catDisponibili = this.categorie.filter(c => c.tipo === nuovoTipo);
+                    if (catDisponibili.length > 0) {
+                        this.nuova.categoria = catDisponibili[0].nome;
+                    } else {
+                        this.nuova.categoria = '';
+                    }
+                    if (this.nuova.descrizione === 'Trasferimento fondi') this.nuova.descrizione = '';
                 }
             },
             
@@ -835,7 +1098,16 @@
                 if (this.nuova.importo <= 0) return;
                 
                 if (!this.nuova.descrizione) {
-                    this.nuova.descrizione = this.nuova.tipo === 'entrata' ? 'Entrata' : 'Spesa generica';
+                    this.nuova.descrizione = this.nuova.tipo === 'entrata' ? 'Entrata' : (this.nuova.tipo === 'giroconto' ? 'Trasferimento' : 'Spesa generica');
+                }
+
+                if (!this.nuova.conto) {
+                    this.nuova.conto = 'Principale';
+                }
+
+                if (this.nuova.tipo === 'giroconto' && this.nuova.conto === this.nuova.conto_dest) {
+                    alert("Seleziona due conti diversi per il trasferimento.");
+                    return;
                 }
 
                 const dati = { ...this.nuova, importo: parseFloat(this.nuova.importo) };
@@ -890,11 +1162,12 @@
                 localStorage.setItem('wallet_dark', this.darkMode);
             },
             esportaCSV() {
-                const header = ["Data", "Tipo", "Categoria", "Descrizione", "Importo"];
+                const header = ["Data", "Tipo", "Categoria", "Conto", "Descrizione", "Importo"];
                 const rows = this.transazioni.map(t => [
                     t.data, 
                     t.tipo, 
                     t.categoria, 
+                    t.tipo === 'giroconto' ? `${t.conto} -> ${t.conto_dest}` : (t.conto || 'Principale'),
                     (t.descrizione || "").replace(/"/g, '""'), 
                     t.importo.toFixed(2)
                 ].map(field => `"${field}"`).join(","));
@@ -1025,10 +1298,46 @@
                 this.categorie = this.categorie.filter(c => !(c.nome === nome && c.tipo === tipo)); 
                 this.salvaDatiLocali(); 
             },
+            
+            creaConto() {
+                if (this.nuovoContoNome && !this.conti.find(c => c.nome === this.nuovoContoNome)) {
+                    this.conti.push({ nome: this.nuovoContoNome, icona: this.nuovoContoIcona.trim() || '🏦' });
+                    this.nuovoContoNome = ''; this.nuovoContoIcona = '';
+                    this.salvaDatiLocali();
+                }
+            },
+            eliminaConto(nome) {
+                if(this.conti.length <= 1) return alert("Devi avere almeno un conto.");
+                this.conti = this.conti.filter(c => c.nome !== nome);
+                this.salvaDatiLocali();
+            },
+
+            creaBudget() {
+                if (this.nuovoBudgetCat && this.nuovoBudgetLimite > 0) {
+                    const idx = this.budgets.findIndex(b => b.categoria === this.nuovoBudgetCat);
+                    if (idx >= 0) {
+                        this.budgets[idx].limite = parseFloat(this.nuovoBudgetLimite);
+                    } else {
+                        this.budgets.push({ categoria: this.nuovoBudgetCat, limite: parseFloat(this.nuovoBudgetLimite) });
+                    }
+                    this.nuovoBudgetCat = ''; this.nuovoBudgetLimite = '';
+                    this.salvaDatiLocali();
+                }
+            },
+            eliminaBudget(categoria) {
+                this.budgets = this.budgets.filter(b => b.categoria !== categoria);
+                this.salvaDatiLocali();
+            },
+
             getIcona(nomeCategoria) {
                 if (nomeCategoria === 'Entrata') return '💰';
+                if (nomeCategoria === 'Giroconto') return '↔️';
                 const cat = this.categorie.find(c => c.nome === nomeCategoria);
                 return cat ? cat.icona : '🏷️';
+            },
+            getIconaConto(nomeConto) {
+                const conto = this.conti.find(c => c.nome === nomeConto);
+                return conto ? conto.icona : '🏦';
             },
             isFaIcon(icon) { return icon && icon.toString().startsWith('fa-'); },
             getColorCategoria(nome) {
@@ -1036,14 +1345,17 @@
                 return this.paletteColori[Math.abs(hash) % this.paletteColori.length];
             },
             calcolaTotaleMese(gruppo) { 
-                return gruppo.reduce((acc, t) => t.tipo === 'entrata' ? acc + t.importo : acc - t.importo, 0); 
+                return gruppo.reduce((acc, t) => t.tipo === 'entrata' ? acc + t.importo : (t.tipo === 'uscita' ? acc - t.importo : acc), 0); 
             },
             formatValuta(val) { return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 }).format(val); },
             formatValutaNoSymbol(val) { return new Intl.NumberFormat('it-IT', { minimumFractionDigits: 2 }).format(val); },
+            
             salvaDatiLocali() { 
                 if(!this.firebaseAttivo) {
                     localStorage.setItem('wallet_transazioni', JSON.stringify(this.transazioni)); 
                     localStorage.setItem('wallet_categorie_obj', JSON.stringify(this.categorie)); 
+                    localStorage.setItem('wallet_conti', JSON.stringify(this.conti));
+                    localStorage.setItem('wallet_budgets', JSON.stringify(this.budgets));
                 }
             },
             
@@ -1070,10 +1382,21 @@
                 } else {
                     const tx = localStorage.getItem('wallet_transazioni'); 
                     const catObj = localStorage.getItem('wallet_categorie_obj');
+                    const contiObj = localStorage.getItem('wallet_conti');
+                    const budgetObj = localStorage.getItem('wallet_budgets');
+                    
                     if (tx) this.transazioni = JSON.parse(tx); 
+                    
+                    if (contiObj) {
+                        this.conti = JSON.parse(contiObj);
+                    }
+
+                    if (budgetObj) {
+                        this.budgets = JSON.parse(budgetObj);
+                    }
+
                     if (catObj) {
                         let parsedCats = JSON.parse(catObj);
-                        // Assicura che le categorie vecchie siano divise correttamente in Entrate/Uscite
                         parsedCats = parsedCats.map(c => {
                             if (!c.tipo) {
                                 if (['Stipendio', 'Regalo', 'Entrata', 'Rimborsi'].includes(c.nome)) {
