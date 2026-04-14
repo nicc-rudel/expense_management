@@ -295,7 +295,7 @@
 
     <!-- OVERLAY SCURO UNIFICATO -->
     <transition name="fade">
-        <div v-if="mostraMenu || mostraForm || mostraModalConferma || mostraModalPin" class="fixed inset-0 z-[80] bg-zinc-900/60 dark:bg-black/80 backdrop-blur-md pointer-events-auto" @click="chiudiModali"></div>
+        <div v-if="mostraMenu || mostraForm || mostraModalConferma || mostraModalPin || mostraModalAllinea" class="fixed inset-0 z-[80] bg-zinc-900/60 dark:bg-black/80 backdrop-blur-md pointer-events-auto" @click="chiudiModali"></div>
     </transition>
 
     <!-- 1) SIDEBAR MENU IMPOSTAZIONI (Da Sinistra - Stile App Nativa) -->
@@ -375,7 +375,7 @@
                                     <div class="text-left"><div class="font-bold text-[15px] text-zinc-800 dark:text-zinc-200">Tema Scuro</div><div class="text-[12px] text-zinc-500 font-medium">Cambia aspetto</div></div>
                                 </div>
                                 <button class="w-14 h-7 rounded-full relative transition-all duration-300 shadow-inner border border-zinc-200 dark:border-zinc-700" :class="darkMode ? 'bg-brand-500 border-brand-500' : 'bg-zinc-200 dark:bg-zinc-700'">
-                                    <div class="w-5 h-5 bg-white rounded-full absolute top-[3px] transition-all shadow-sm" :class="darkMode ? 'left-[30px]' : 'left-[4px]'"></div>
+                                    <div class="w-5 h-5 bg-white rounded-full absolute top-[3px] transition-all shadow-sm" :class="darkMode ? 'left-[32px]' : 'left-[3px]'"></div>
                                 </button>
                             </div>
                         </div>
@@ -474,7 +474,7 @@
                         <div class="bg-white/60 dark:bg-zinc-800/60 p-4 rounded-[1.5rem] border border-white/60 dark:border-zinc-700/50 shadow-glass dark:shadow-glass-dark mb-4 mt-2">
                             <div class="flex gap-3 mb-4">
                                 <input v-model="nuovoContoIcona" placeholder="🏦" class="w-14 h-12 text-center text-xl border border-zinc-200/50 dark:border-zinc-600 rounded-2xl outline-none bg-zinc-50/50 dark:bg-zinc-900/50 dark:text-white shadow-inner focus:border-brand-500 transition-colors" maxlength="2">
-                                <input v-model="nuovoContoNome" placeholder="Nome conto..." class="flex-1 h-12 px-4 text-sm border border-zinc-200/50 dark:border-zinc-600 rounded-2xl outline-none bg-zinc-50/50 dark:bg-zinc-900/50 dark:text-white shadow-inner focus:border-brand-500 transition-colors font-bold">
+                                <input v-model="nuovoContoNome" placeholder="Nome conto..." class="flex-1 h-12 px-4 text-base border border-zinc-200/50 dark:border-zinc-600 rounded-2xl outline-none bg-zinc-50/50 dark:bg-zinc-900/50 dark:text-white shadow-inner focus:border-brand-500 transition-colors font-bold">
                             </div>
                             <button @click="creaConto" class="w-full py-3 bg-zinc-900 dark:bg-brand-600 text-white text-xs font-bold rounded-xl shadow-lg hover:bg-zinc-800 dark:hover:bg-brand-500 active:scale-95 transition-all">Aggiungi Nuovo Conto</button>
                         </div>
@@ -493,7 +493,14 @@
                                         </div>
                                     </div>
                                 </div>
-                                <button @click="eliminaConto(conto.nome)" class="text-zinc-300 hover:text-rose-500 w-8 h-8 flex items-center justify-center rounded-full hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors opacity-50 group-hover:opacity-100"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                                <div class="flex items-center gap-1 opacity-50 group-hover:opacity-100 transition-opacity">
+                                    <button @click="apriModalAllinea(conto.nome)" class="text-zinc-400 hover:text-brand-500 w-8 h-8 flex items-center justify-center rounded-full hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors" title="Allinea Saldo">
+                                        <i class="fa-solid fa-scale-balanced text-sm"></i>
+                                    </button>
+                                    <button @click="eliminaConto(conto.nome)" class="text-zinc-400 hover:text-rose-500 w-8 h-8 flex items-center justify-center rounded-full hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors" title="Elimina Conto">
+                                        <i class="fa-solid fa-trash-can text-sm"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -507,7 +514,7 @@
                         <div class="bg-white/60 dark:bg-zinc-800/60 p-4 rounded-[1.5rem] border border-white/60 dark:border-zinc-700/50 shadow-glass dark:shadow-glass-dark mb-4">
                             <div class="flex gap-3 mb-4">
                                 <input v-model="nuovaCatIconaUscita" placeholder="🎨" class="w-14 h-12 text-center text-xl border border-zinc-200/50 dark:border-zinc-600 rounded-2xl outline-none bg-zinc-50/50 dark:bg-zinc-900/50 dark:text-white shadow-inner focus:border-rose-500 transition-colors" maxlength="2">
-                                <input v-model="nuovaCatNomeUscita" placeholder="Nuova Uscita..." class="flex-1 h-12 px-4 text-sm border border-zinc-200/50 dark:border-zinc-600 rounded-2xl outline-none bg-zinc-50/50 dark:bg-zinc-900/50 dark:text-white shadow-inner focus:border-rose-500 transition-colors font-bold">
+                                <input v-model="nuovaCatNomeUscita" placeholder="Nuova Uscita..." class="flex-1 h-12 px-4 text-base border border-zinc-200/50 dark:border-zinc-600 rounded-2xl outline-none bg-zinc-50/50 dark:bg-zinc-900/50 dark:text-white shadow-inner focus:border-rose-500 transition-colors font-bold">
                             </div>
                             <button @click="creaCategoria('uscita')" class="w-full py-3 bg-zinc-900 dark:bg-rose-600 text-white text-xs font-bold rounded-xl shadow-lg hover:bg-zinc-800 dark:hover:bg-rose-500 active:scale-95 transition-all">Aggiungi Uscita</button>
                         </div>
@@ -534,7 +541,7 @@
                         <div class="bg-white/60 dark:bg-zinc-800/60 p-4 rounded-[1.5rem] border border-white/60 dark:border-zinc-700/50 shadow-glass dark:shadow-glass-dark mb-4">
                             <div class="flex gap-3 mb-4">
                                 <input v-model="nuovaCatIconaEntrata" placeholder="💰" class="w-14 h-12 text-center text-xl border border-zinc-200/50 dark:border-zinc-600 rounded-2xl outline-none bg-zinc-50/50 dark:bg-zinc-900/50 dark:text-white shadow-inner focus:border-emerald-500 transition-colors" maxlength="2">
-                                <input v-model="nuovaCatNomeEntrata" placeholder="Nuova Entrata..." class="flex-1 h-12 px-4 text-sm border border-zinc-200/50 dark:border-zinc-600 rounded-2xl outline-none bg-zinc-50/50 dark:bg-zinc-900/50 dark:text-white shadow-inner focus:border-emerald-500 transition-colors font-bold">
+                                <input v-model="nuovaCatNomeEntrata" placeholder="Nuova Entrata..." class="flex-1 h-12 px-4 text-base border border-zinc-200/50 dark:border-zinc-600 rounded-2xl outline-none bg-zinc-50/50 dark:bg-zinc-900/50 dark:text-white shadow-inner focus:border-emerald-500 transition-colors font-bold">
                             </div>
                             <button @click="creaCategoria('entrata')" class="w-full py-3 bg-zinc-900 dark:bg-emerald-600 text-white text-xs font-bold rounded-xl shadow-lg hover:bg-zinc-800 dark:hover:bg-emerald-500 active:scale-95 transition-all">Aggiungi Entrata</button>
                         </div>
@@ -561,12 +568,12 @@
                         
                         <div class="bg-white/60 dark:bg-zinc-800/60 p-4 rounded-[1.5rem] border border-white/60 dark:border-zinc-700/50 shadow-glass dark:shadow-glass-dark mb-6">
                             <div class="flex gap-3 mb-4">
-                                <select v-model="nuovoBudgetCat" class="w-1/2 h-12 px-3 text-sm border border-zinc-200/50 dark:border-zinc-600 rounded-2xl outline-none bg-zinc-50/50 dark:bg-zinc-900/50 dark:text-white shadow-inner focus:border-brand-500 transition-colors font-bold appearance-none">
+                                <select v-model="nuovoBudgetCat" class="w-1/2 h-12 px-3 text-base border border-zinc-200/50 dark:border-zinc-600 rounded-2xl outline-none bg-zinc-50/50 dark:bg-zinc-900/50 dark:text-white shadow-inner focus:border-brand-500 transition-colors font-bold appearance-none">
                                     <option value="" disabled selected>Categoria...</option>
                                     <option v-for="cat in categorieUscite" :key="cat.nome" :value="cat.nome">{{ cat.nome }}</option>
                                 </select>
                                 <div class="relative w-1/2">
-                                    <input type="number" step="1" v-model.number="nuovoBudgetLimite" placeholder="Limite..." class="w-full h-12 px-4 pr-8 text-sm border border-zinc-200/50 dark:border-zinc-600 rounded-2xl outline-none bg-zinc-50/50 dark:bg-zinc-900/50 dark:text-white shadow-inner focus:border-brand-500 transition-colors font-bold">
+                                    <input type="number" step="1" v-model.number="nuovoBudgetLimite" placeholder="Limite..." class="w-full h-12 px-4 pr-8 text-base border border-zinc-200/50 dark:border-zinc-600 rounded-2xl outline-none bg-zinc-50/50 dark:bg-zinc-900/50 dark:text-white shadow-inner focus:border-brand-500 transition-colors font-bold">
                                     <span class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 font-bold">€</span>
                                 </div>
                             </div>
@@ -685,7 +692,7 @@
                                     <div class="flex-1">
                                         <label class="text-[10px] font-bold text-rose-500 mb-2 block uppercase tracking-widest pl-2">Da Conto</label>
                                         <div class="relative">
-                                            <select v-model="nuova.conto" class="w-full h-12 px-3 text-sm border border-zinc-200/50 dark:border-zinc-600 rounded-xl outline-none bg-white/80 dark:bg-zinc-800/80 dark:text-white shadow-sm focus:border-brand-500 transition-colors font-bold appearance-none">
+                                            <select v-model="nuova.conto" class="w-full h-12 px-3 text-base border border-zinc-200/50 dark:border-zinc-600 rounded-xl outline-none bg-white/80 dark:bg-zinc-800/80 dark:text-white shadow-sm focus:border-brand-500 transition-colors font-bold appearance-none">
                                                 <option v-for="c in conti" :key="c.nome" :value="c.nome">{{ c.nome }}</option>
                                             </select>
                                             <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-400 pointer-events-none"></i>
@@ -697,7 +704,7 @@
                                     <div class="flex-1">
                                         <label class="text-[10px] font-bold text-emerald-500 mb-2 block uppercase tracking-widest pl-2">A Conto</label>
                                         <div class="relative">
-                                            <select v-model="nuova.conto_dest" class="w-full h-12 px-3 text-sm border border-zinc-200/50 dark:border-zinc-600 rounded-xl outline-none bg-white/80 dark:bg-zinc-800/80 dark:text-white shadow-sm focus:border-brand-500 transition-colors font-bold appearance-none">
+                                            <select v-model="nuova.conto_dest" class="w-full h-12 px-3 text-base border border-zinc-200/50 dark:border-zinc-600 rounded-xl outline-none bg-white/80 dark:bg-zinc-800/80 dark:text-white shadow-sm focus:border-brand-500 transition-colors font-bold appearance-none">
                                                 <option v-for="c in conti" :key="c.nome" :value="c.nome">{{ c.nome }}</option>
                                             </select>
                                             <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-400 pointer-events-none"></i>
@@ -796,6 +803,27 @@
         </div>
     </transition>
 
+    <!-- 5) MODALE ALLINEA SALDO -->
+    <transition name="fade">
+        <div v-if="mostraModalAllinea" class="fixed inset-0 z-[110] flex items-center justify-center p-4 pointer-events-none">
+            <div class="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-3xl rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl relative z-10 text-center border border-white/50 dark:border-zinc-700/50 pointer-events-auto">
+                <div class="w-20 h-20 rounded-3xl bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-500/10 dark:to-brand-500/20 text-brand-500 flex items-center justify-center mx-auto mb-6 text-3xl shadow-inner border border-brand-200/50 dark:border-brand-500/20"><i class="fa-solid fa-scale-balanced drop-shadow-md"></i></div>
+                <h3 class="font-black text-2xl text-zinc-900 dark:text-white mb-2 tracking-tight">Allinea Saldo</h3>
+                <p class="text-sm text-zinc-500 dark:text-zinc-400 mb-6 font-medium">Inserisci il saldo reale del conto <b>{{ contoDaAllineare }}</b>. L'app creerà una transazione di rettifica in automatico.</p>
+                
+                <div class="relative flex items-center justify-center w-full mb-8 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 border border-zinc-200 dark:border-zinc-700 shadow-inner">
+                    <input type="number" step="0.01" inputmode="decimal" v-model.number="nuovoSaldoReale" placeholder="0.00" class="w-full bg-transparent text-3xl font-black text-center text-zinc-900 dark:text-white focus:outline-none font-mono tracking-tighter pr-6">
+                    <span class="absolute right-4 text-xl text-zinc-400 font-bold font-mono pointer-events-none">€</span>
+                </div>
+
+                <div class="flex flex-col gap-3">
+                    <button @click="confermaAllineamento" class="w-full py-4 bg-brand-500 text-white font-bold rounded-2xl text-base shadow-[0_8px_20px_rgba(139,92,246,0.4)] hover:bg-brand-600 active:scale-95 transition-all">Sincronizza Ora</button>
+                    <button @click="mostraModalAllinea = false" class="w-full py-4 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-bold rounded-2xl text-base hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors">Annulla</button>
+                </div>
+            </div>
+        </div>
+    </transition>
+
 </div>
 
 <script>
@@ -812,6 +840,7 @@
                 testoRicerca: '',
                 mostraModalConferma: false,
                 mostraModalPin: false,
+                mostraModalAllinea: false,
                 stoAscoltando: false,
                 darkMode: false,
                 nascondiSaldo: false,
@@ -832,6 +861,9 @@
                 nuovaCatNomeUscita: '', nuovaCatIconaUscita: '',
                 nuovaCatNomeEntrata: '', nuovaCatIconaEntrata: '',
                 nuovoContoNome: '', nuovoContoIcona: '',
+                
+                contoDaAllineare: null,
+                nuovoSaldoReale: null,
                 
                 filtroTempo: 'mese_corrente', // Default per statistiche
                 budgets: [],
@@ -1062,6 +1094,7 @@
                 this.chiudiForm();
                 this.mostraModalConferma = false;
                 this.mostraModalPin = false;
+                this.mostraModalAllinea = false;
             },
 
             apriFormNuovaSpesa() {
@@ -1152,6 +1185,59 @@
                     }
                 }
                 this.mostraModalConferma = false; this.idDaEliminare = null;
+            },
+
+            apriModalAllinea(nomeConto) {
+                this.contoDaAllineare = nomeConto;
+                this.nuovoSaldoReale = this.saldiPerConto[nomeConto] || 0;
+                this.mostraModalAllinea = true;
+            },
+
+            async confermaAllineamento() {
+                if (this.nuovoSaldoReale === null || this.nuovoSaldoReale === '') return;
+                
+                const saldoAttuale = this.saldiPerConto[this.contoDaAllineare] || 0;
+                const diff = parseFloat(this.nuovoSaldoReale) - saldoAttuale;
+                
+                if (Math.abs(diff) < 0.01) {
+                    this.mostraModalAllinea = false;
+                    return;
+                }
+                
+                const tipoTx = diff > 0 ? 'entrata' : 'uscita';
+                const importoTx = Math.abs(diff);
+                
+                if (!this.categorie.find(c => c.nome === 'Rettifica' && c.tipo === tipoTx)) {
+                    this.categorie.push({ nome: 'Rettifica', icona: '⚖️', tipo: tipoTx });
+                    this.salvaDatiLocali();
+                }
+                
+                const dati = {
+                    tipo: tipoTx,
+                    importo: importoTx,
+                    descrizione: 'Rettifica Saldo',
+                    categoria: 'Rettifica',
+                    conto: this.contoDaAllineare,
+                    conto_dest: '',
+                    data: new Date().toISOString().split('T')[0],
+                    ricorrente: false,
+                    allegato: null
+                };
+                
+                if (this.firebaseAttivo && this.userId) {
+                    try {
+                        const { collection, addDoc } = window.firebaseModules;
+                        const colRef = collection(this.db, 'artifacts', this.appId, 'users', this.userId, 'transazioni');
+                        await addDoc(colRef, { ...dati, timestamp: Date.now() });
+                    } catch (e) { console.error("Err Cloud Rettifica", e); }
+                } else {
+                    this.transazioni.unshift({ id: Date.now(), ...dati });
+                    this.salvaDatiLocali();
+                }
+                
+                this.mostraModalAllinea = false;
+                this.contoDaAllineare = null;
+                this.nuovoSaldoReale = null;
             },
 
             toggleRicerca() { this.mostraRicerca = !this.mostraRicerca; this.testoRicerca = ''; },
@@ -1332,6 +1418,7 @@
             getIcona(nomeCategoria) {
                 if (nomeCategoria === 'Entrata') return '💰';
                 if (nomeCategoria === 'Giroconto') return '↔️';
+                if (nomeCategoria === 'Rettifica') return '⚖️';
                 const cat = this.categorie.find(c => c.nome === nomeCategoria);
                 return cat ? cat.icona : '🏷️';
             },
@@ -1341,6 +1428,7 @@
             },
             isFaIcon(icon) { return icon && icon.toString().startsWith('fa-'); },
             getColorCategoria(nome) {
+                if (nome === 'Rettifica') return '#94a3b8'; // Grigio neutrale per le rettifiche
                 let hash = 0; for (let i = 0; i < nome.length; i++) hash = nome.charCodeAt(i) + ((hash << 5) - hash);
                 return this.paletteColori[Math.abs(hash) % this.paletteColori.length];
             },
